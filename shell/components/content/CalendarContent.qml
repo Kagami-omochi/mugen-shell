@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import Quickshell.Io
 
 Item {
     id: root
@@ -15,6 +16,94 @@ Item {
         "topMargin": modeManager.scale(6),
         "bottomMargin": modeManager.scale(6)
     })
+
+    property var events: []
+    property var eventsByDate: ({})
+
+    function dateKey(year, month, day) {
+        let m = month < 10 ? "0" + month : "" + month
+        let d = day < 10 ? "0" + day : "" + day
+        return year + "-" + m + "-" + d
+    }
+
+    function eventsForDate(key) {
+        return eventsByDate[key] || []
+    }
+
+    function rebuildIndex() {
+        let idx = {}
+        for (let i = 0; i < events.length; i++) {
+            let e = events[i]
+            if (!e || !e.date) continue
+            if (!idx[e.date]) idx[e.date] = []
+            idx[e.date].push(e)
+        }
+        eventsByDate = idx
+    }
+
+    function genEventId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+    }
+
+    function addEvent(date, title, time) {
+        if (!date || !title) return
+        let next = events.slice()
+        next.push({
+            id: genEventId(),
+            date: date,
+            title: title,
+            time: time || ""
+        })
+        events = next
+        rebuildIndex()
+        saveEvents()
+    }
+
+    function deleteEvent(id) {
+        events = events.filter(e => e.id !== id)
+        rebuildIndex()
+        saveEvents()
+    }
+
+    function saveEvents() {
+        let json = JSON.stringify({ events: events })
+        let escaped = json.replace(/'/g, "'\\''")
+        saveEventsProcess.command = [
+            "sh", "-c",
+            "d=\"${XDG_DATA_HOME:-$HOME/.local/share}/mugen-shell\"; mkdir -p \"$d\" && printf '%s' '" + escaped + "' > \"$d/events.json\""
+        ]
+        saveEventsProcess.running = true
+    }
+
+    Process {
+        id: loadEventsProcess
+        command: ["sh", "-c", "f=\"${XDG_DATA_HOME:-$HOME/.local/share}/mugen-shell/events.json\"; [ -f \"$f\" ] && cat \"$f\" || printf '{}'"]
+        running: false
+
+        property string output: ""
+
+        stdout: SplitParser {
+            onRead: data => {
+                loadEventsProcess.output += data
+            }
+        }
+
+        onExited: () => {
+            try {
+                let parsed = JSON.parse(loadEventsProcess.output || "{}")
+                root.events = Array.isArray(parsed.events) ? parsed.events : []
+                root.rebuildIndex()
+            } catch (e) {
+            }
+            loadEventsProcess.output = ""
+        }
+    }
+
+    Process {
+        id: saveEventsProcess
+        command: ["true"]
+        running: false
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -331,6 +420,9 @@ Item {
 
                                 property bool isSelected: index === calendarGrid.selectedIndex
 
+                                property string cellDateKey: isCurrentMonth ? root.dateKey(monthHeader.currentYear, monthHeader.currentMonth, dayNumber) : ""
+                                property bool hasEvents: cellDateKey ? root.eventsForDate(cellDateKey).length > 0 : false
+
                                 Item {
                                     anchors.centerIn: parent
                                     width: modeManager.scale(56)
@@ -491,6 +583,18 @@ Item {
                                     }
                                 }
 
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: -modeManager.scale(2)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: modeManager.scale(4)
+                                    height: modeManager.scale(4)
+                                    radius: modeManager.scale(2)
+                                    color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1.0)
+                                    visible: hasEvents && isCurrentMonth
+                                    opacity: 0.85
+                                }
+
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
@@ -512,9 +616,19 @@ Item {
         }
     }
 
+    Connections {
+        target: modeManager
+        function onCurrentModeChanged() {
+            if (modeManager.isMode("calendar")) {
+                loadEventsProcess.running = true
+            }
+        }
+    }
+
     Component.onCompleted: {
         if (modeManager) {
             modeManager.registerMode("calendar", root)
         }
+        loadEventsProcess.running = true
     }
 }
