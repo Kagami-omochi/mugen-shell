@@ -187,6 +187,20 @@ Item {
         function onCurrentModeChanged() {
             if (modeManager.isMode("notification")) {
                 notificationManager.markAllAsRead()
+                notificationList.currentIndex = -1
+                focusTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: focusTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: {
+            if (notificationLayer && modeManager.isMode("notification")) {
+                notificationLayer.forceActiveFocus()
             }
         }
     }
@@ -226,6 +240,66 @@ Item {
             if (modeManager.isMode("notification")) modeManager.bump()
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_D && !(event.modifiers & Qt.ControlModifier)) {
+                notificationManager.notificationsEnabled = !notificationManager.notificationsEnabled
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_L && (event.modifiers & Qt.ControlModifier)) {
+                root.clearAllNotifications()
+                event.accepted = true
+                return
+            }
+
+            let count = notificationListModel.count
+            if (count === 0) return
+
+            if (event.key === Qt.Key_Down) {
+                let next = notificationList.currentIndex + 1
+                if (next >= count) next = 0
+                notificationList.currentIndex = next
+                notificationList.positionViewAtIndex(next, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Up) {
+                let prev = notificationList.currentIndex - 1
+                if (prev < 0) prev = count - 1
+                notificationList.currentIndex = prev
+                notificationList.positionViewAtIndex(prev, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Home) {
+                notificationList.currentIndex = 0
+                notificationList.positionViewAtIndex(0, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_End) {
+                notificationList.currentIndex = count - 1
+                notificationList.positionViewAtIndex(count - 1, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                let idx = notificationList.currentIndex
+                if (idx >= 0 && idx < notifications.length) {
+                    let notif = notifications[idx]
+                    if (notif && notif.desktopEntry && notif.desktopEntry.length > 0) {
+                        launchAppProcess.command = ["python3", Quickshell.shellDir + "/scripts/focus_or_launch.py", notif.desktopEntry]
+                        launchAppProcess.running = true
+                    }
+                    if (notif && notif.id !== undefined) {
+                        root.removeNotification(notif.id)
+                    }
+                }
+                event.accepted = true
+            } else if (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace) {
+                let idx = notificationList.currentIndex
+                if (idx >= 0 && idx < notifications.length) {
+                    let notif = notifications[idx]
+                    if (notif && notif.id !== undefined) {
+                        root.removeNotification(notif.id)
+                    }
+                }
                 event.accepted = true
             }
         }
@@ -443,15 +517,17 @@ Item {
                     spacing: 8
                     clip: true
                     visible: notificationListModel.count > 0
-                    
+
                     model: ListModel {
                         id: notificationListModel
                     }
-                    
+
                     // Disable item reuse so removal animations play correctly
                     reuseItems: false
 
                     cacheBuffer: 200
+
+                    currentIndex: -1
 
                     property bool hasMoreBelow: !atYEnd && contentHeight > height
 
@@ -616,6 +692,7 @@ Item {
             modeManager.registerMode("notification", root)
             if (modeManager.isMode("notification")) {
                 notificationManager.markAllAsRead()
+                focusTimer.restart()
             }
         }
     }

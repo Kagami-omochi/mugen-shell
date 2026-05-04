@@ -23,7 +23,7 @@ Rectangle {
     border.width: 0
     clip: true
     
-    property bool isExpanded: notifMouseArea.containsMouse && !notificationItem.isRemoving
+    property bool isExpanded: notificationItem.ListView.isCurrentItem && !notificationItem.isRemoving
     property bool showFullText: isExpanded
 
     // Delay text collapse to prevent visual flicker during hover transitions
@@ -121,6 +121,7 @@ Rectangle {
         anchors.topMargin: 12
         anchors.bottomMargin: 12
         spacing: 4
+        z: 3
         
         Row {
             Layout.fillWidth: true
@@ -158,12 +159,100 @@ Rectangle {
             maximumLineCount: notificationItem.showFullText ? 999 : 1
             Layout.fillWidth: true
         }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            spacing: 8
+            visible: notificationItem.isExpanded
+
+            Item { Layout.fillWidth: true }
+
+            Rectangle {
+                id: openBtn
+                Layout.preferredWidth: openText.implicitWidth + 20
+                Layout.preferredHeight: 24
+                visible: modelData && modelData.desktopEntry && String(modelData.desktopEntry).length > 0
+                color: openBtnArea.containsMouse
+                    ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.18) : Qt.rgba(0.65, 0.55, 0.85, 0.18))
+                    : "transparent"
+                border.width: 1
+                border.color: theme
+                    ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, openBtnArea.containsMouse ? 0.65 : 0.3)
+                    : Qt.rgba(0.65, 0.55, 0.85, openBtnArea.containsMouse ? 0.65 : 0.3)
+                radius: 12
+                z: 3
+
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                Text {
+                    id: openText
+                    anchors.centerIn: parent
+                    text: "Open"
+                    color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 0.3
+                }
+
+                MouseArea {
+                    id: openBtnArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: notificationItem.actionRequested(modelData)
+                }
+            }
+
+            Rectangle {
+                id: dismissBtn
+                Layout.preferredWidth: dismissText.implicitWidth + 20
+                Layout.preferredHeight: 24
+                color: dismissBtnArea.containsMouse
+                    ? Qt.rgba(1, 0.5, 0.55, 0.18)
+                    : "transparent"
+                border.width: 1
+                border.color: dismissBtnArea.containsMouse
+                    ? Qt.rgba(1, 0.5, 0.55, 0.6)
+                    : Qt.rgba(0.55, 0.55, 0.62, 0.3)
+                radius: 12
+                z: 3
+
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                Text {
+                    id: dismissText
+                    anchors.centerIn: parent
+                    text: "Dismiss"
+                    color: dismissBtnArea.containsMouse
+                        ? Qt.rgba(1, 0.55, 0.6, 1)
+                        : Qt.rgba(0.75, 0.75, 0.8, 0.85)
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 0.3
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+
+                MouseArea {
+                    id: dismissBtnArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: notificationItem.removeRequested(modelData.id)
+                }
+            }
+        }
     }
     
     states: [
         State {
             name: "hovered"
-            when: notifMouseArea.containsMouse && !notificationItem.isRemoving
+            when: notificationItem.ListView.isCurrentItem && !notificationItem.isRemoving
             PropertyChanges { target: notificationItem; color: theme ? theme.surfaceInsetCardHover : Qt.rgba(0, 0, 0, 0.75) }
         }
     ]
@@ -185,7 +274,13 @@ Rectangle {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
         z: 2
-        
+
+        onEntered: {
+            if (notificationItem.ListView.view) {
+                notificationItem.ListView.view.currentIndex = notificationItem.index
+            }
+        }
+
         onClicked: function(mouse) {
             if (mouse.button === Qt.LeftButton) {
                 actionRequested(modelData)
