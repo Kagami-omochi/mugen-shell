@@ -39,7 +39,23 @@ Item {
     Connections {
         target: modeManager
         function onCurrentModeChanged() {
-            if (modeManager.isMode("wifi")) wifiManager.fullRefresh()
+            if (modeManager.isMode("wifi")) {
+                wifiManager.fullRefresh()
+                networkList.currentIndex = -1
+                focusTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: focusTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: {
+            if (wifiLayer && modeManager.isMode("wifi")) {
+                wifiLayer.forceActiveFocus()
+            }
         }
     }
 
@@ -76,6 +92,68 @@ Item {
             }
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_P && !(event.modifiers & Qt.ControlModifier)) {
+                wifiManager.togglePower()
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_R && !(event.modifiers & Qt.ControlModifier)) {
+                if (wifiManager.isPowered && !wifiManager.isRefreshing) {
+                    wifiManager.fullRefresh()
+                }
+                event.accepted = true
+                return
+            }
+
+            if (!wifiManager.isPowered) return
+
+            let count = networkList.count
+            if (count === 0) return
+
+            if (event.key === Qt.Key_Down) {
+                let next = networkList.currentIndex + 1
+                if (next >= count) next = 0
+                networkList.currentIndex = next
+                networkList.positionViewAtIndex(next, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Up) {
+                let prev = networkList.currentIndex - 1
+                if (prev < 0) prev = count - 1
+                networkList.currentIndex = prev
+                networkList.positionViewAtIndex(prev, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Home) {
+                networkList.currentIndex = 0
+                networkList.positionViewAtIndex(0, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_End) {
+                networkList.currentIndex = count - 1
+                networkList.positionViewAtIndex(count - 1, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                let idx = networkList.currentIndex
+                if (idx < 0) return
+                let net = wifiManager.availableNetworks[idx]
+                if (!net) return
+                if (wifiManager.isConnected && net.ssid === wifiManager.currentSsid) {
+                    event.accepted = true
+                    return
+                }
+                if (!net.secured) {
+                    root.connectingNetworkIndex = idx
+                    wifiManager.connectToNetwork(net.ssid, "")
+                } else {
+                    if (networkList.expandedIndex === idx) {
+                        networkList.expandedIndex = -1
+                    } else {
+                        networkList.expandedIndex = idx
+                    }
+                }
                 event.accepted = true
             }
         }
@@ -408,11 +486,12 @@ Item {
                     anchors.fill: parent
                     spacing: 8
                     clip: true
-                    
+
                     model: wifiManager.availableNetworks
-                    
+
                     reuseItems: false
-                    
+
+                    currentIndex: -1
                     property int expandedIndex: -1
 
                     opacity: wifiManager.isPowered && !wifiManager.isRefreshing ? 1.0 : 0.0
@@ -477,6 +556,7 @@ Item {
                             icons: root.icons
                             wifiManager: root.wifiManager
                             isExpanded: networkList.expandedIndex === delegateItem.itemIndex
+                            isCurrentItem: delegateItem.ListView.isCurrentItem
                             isConnecting: root.wifiManager.isConnecting
                             connectingNetworkIndex: root.connectingNetworkIndex
                             
@@ -495,6 +575,10 @@ Item {
                             onConnectToNetwork: (ssid, password) => {
                                 root.connectingNetworkIndex = delegateItem.itemIndex
                                 root.wifiManager.connectToNetwork(ssid, password)
+                            }
+
+                            onRequestSelect: {
+                                networkList.currentIndex = delegateItem.itemIndex
                             }
                         }
                     }
@@ -581,6 +665,7 @@ Item {
             if (modeManager.isMode("wifi")) {
                 modeManager.bump()
                 wifiManager.fullRefresh()
+                focusTimer.restart()
             }
         }
     }

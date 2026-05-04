@@ -12,12 +12,14 @@ Rectangle {
     required property var icons
     required property var wifiManager
     required property bool isExpanded
+    required property bool isCurrentItem
     required property bool isConnecting
     required property int connectingNetworkIndex
 
     signal toggleExpanded()
     signal resetAutoCloseTimer()
     signal connectToNetwork(string ssid, string password)
+    signal requestSelect()
 
     width: parent ? parent.width : (ListView.view ? ListView.view.width : 420)
 
@@ -26,11 +28,20 @@ Rectangle {
     implicitHeight: targetHeight
     height: targetHeight
 
-    color: networkMouseArea.containsMouse
+    readonly property bool isHighlighted: (networkMouseArea.containsMouse || root.isCurrentItem) && !root.isExpanded
+
+    color: (networkMouseArea.containsMouse || root.isCurrentItem)
         ? (theme ? theme.surfaceInsetCardHover : Qt.rgba(0, 0, 0, 0.75))
         : (theme ? theme.surfaceInsetCard : Qt.rgba(0, 0, 0, 0.65))
-    radius: root.isExpanded ? 20 : (height / 2)
-    border.width: 0
+    radius: root.isExpanded ? 20 : (root.isHighlighted ? 16 : height / 2)
+    border.width: root.isHighlighted ? 1 : 0
+    border.color: theme
+        ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5)
+        : Qt.rgba(0.65, 0.55, 0.85, 0.5)
+
+    Behavior on border.width {
+        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+    }
 
     layer.enabled: true
     layer.effect: Glow {
@@ -51,6 +62,11 @@ Rectangle {
     onIsExpandedChanged: {
         if (root.isExpanded) {
             targetHeight = 140
+            if (root.modelData && root.modelData.secured) {
+                Qt.callLater(() => {
+                    if (passwordInput) passwordInput.forceActiveFocus()
+                })
+            }
         } else {
             targetHeight = 50
         }
@@ -315,6 +331,8 @@ Rectangle {
         anchors.bottomMargin: root.isExpanded ? 88 : 0
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+
+        onEntered: root.requestSelect()
 
         onPressed: (mouse) => {
             let chevronX = parent.width - 32
