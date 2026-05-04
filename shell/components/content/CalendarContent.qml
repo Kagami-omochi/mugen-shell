@@ -182,6 +182,18 @@ Item {
         editingId = ""
     }
 
+    Timer {
+        id: focusTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: {
+            if (calendarLayer && modeManager.isMode("calendar") && !root.modalOpen) {
+                calendarLayer.forceActiveFocus()
+            }
+        }
+    }
+
     Process {
         id: loadEventsProcess
         running: false
@@ -246,11 +258,38 @@ Item {
         anchors.rightMargin: modeManager.scale(32)
         z: 2
 
-        focus: modeManager.isMode("calendar")
+        focus: modeManager.isMode("calendar") && !root.modalOpen
         Keys.onPressed: (event) => {
+            if (root.modalOpen) return
             if (modeManager.isMode("calendar")) modeManager.bump()
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
+                event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Left) {
+                calendarGrid.moveSelection(-1)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Right) {
+                calendarGrid.moveSelection(1)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Up) {
+                calendarGrid.moveSelection(-7)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Down) {
+                calendarGrid.moveSelection(7)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                calendarGrid.openSelected()
+                event.accepted = true
+            } else if (event.key === Qt.Key_PageUp) {
+                calendarGrid.changeMonth(-1)
+                event.accepted = true
+            } else if (event.key === Qt.Key_PageDown) {
+                calendarGrid.changeMonth(1)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Home) {
+                calendarGrid.jumpToToday()
                 event.accepted = true
             }
         }
@@ -496,6 +535,61 @@ Item {
                             // Force Repeater to regenerate by resetting model
                             calendarRepeater.model = 0
                             calendarRepeater.model = 42
+                        }
+
+                        function indexOfFirstDay() {
+                            return new Date(monthHeader.currentYear, monthHeader.currentMonth - 1, 1).getDay()
+                        }
+
+                        function indexOfToday() {
+                            if (monthHeader.currentMonth !== todayMonth || monthHeader.currentYear !== todayYear) return -1
+                            return indexOfFirstDay() + today - 1
+                        }
+
+                        function dayOfIndex(idx) {
+                            const startOffset = indexOfFirstDay()
+                            const dayIndex = idx - startOffset + 1
+                            const lastDay = new Date(monthHeader.currentYear, monthHeader.currentMonth, 0).getDate()
+                            if (dayIndex > 0 && dayIndex <= lastDay) return dayIndex
+                            return 0
+                        }
+
+                        function moveSelection(delta) {
+                            let cur = selectedIndex
+                            if (cur < 0) {
+                                cur = indexOfToday()
+                                if (cur < 0) cur = indexOfFirstDay()
+                            }
+                            let next = cur + delta
+                            if (next < 0) next = 0
+                            if (next > 41) next = 41
+                            selectedIndex = next
+                        }
+
+                        function openSelected() {
+                            let idx = selectedIndex
+                            if (idx < 0) idx = indexOfToday()
+                            if (idx < 0) return
+                            const day = dayOfIndex(idx)
+                            if (day <= 0) return
+                            const key = root.dateKey(monthHeader.currentYear, monthHeader.currentMonth, day)
+                            root.openEventModal(key)
+                        }
+
+                        function jumpToToday() {
+                            monthHeader.currentMonth = todayMonth
+                            monthHeader.currentYear = todayYear
+                            selectedIndex = indexOfToday()
+                        }
+
+                        function changeMonth(delta) {
+                            let m = monthHeader.currentMonth + delta
+                            let y = monthHeader.currentYear
+                            while (m < 1) { m += 12; y-- }
+                            while (m > 12) { m -= 12; y++ }
+                            monthHeader.currentMonth = m
+                            monthHeader.currentYear = y
+                            selectedIndex = indexOfFirstDay()
                         }
 
                         Repeater {
@@ -1092,6 +1186,9 @@ Item {
                             verticalAlignment: TextInput.AlignVCenter
                             clip: true
 
+                            KeyNavigation.tab: root.formAllDay ? titleInput : timeInput
+                            KeyNavigation.backtab: root.formAllDay ? titleInput : timeInput
+
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Title"
@@ -1177,6 +1274,9 @@ Item {
                             verticalAlignment: TextInput.AlignVCenter
                             maximumLength: 5
 
+                            KeyNavigation.tab: titleInput
+                            KeyNavigation.backtab: titleInput
+
                             property bool _formatting: false
 
                             onTextChanged: {
@@ -1261,9 +1361,16 @@ Item {
         function onCurrentModeChanged() {
             if (modeManager.isMode("calendar")) {
                 root.reloadEvents()
+                focusTimer.restart()
             } else {
                 root.modalOpen = false
             }
+        }
+    }
+
+    onModalOpenChanged: {
+        if (!modalOpen && modeManager && modeManager.isMode("calendar")) {
+            focusTimer.restart()
         }
     }
 
@@ -1276,6 +1383,9 @@ Item {
     Component.onCompleted: {
         if (modeManager) {
             modeManager.registerMode("calendar", root)
+            if (modeManager.isMode("calendar")) {
+                focusTimer.restart()
+            }
         }
         root.reloadEvents()
     }
