@@ -25,6 +25,51 @@ Rectangle {
         if (modeManager && modeManager.isMode("settings")) modeManager.bump()
     }
 
+    property int kbHighlightIndex: -1
+
+    function syncKbToCurrent() {
+        if (!section.sounds || !section.settingsManager) return
+        for (let i = 0; i < section.sounds.length; i++) {
+            if (section.sounds[i] === section.settingsManager.notificationSound) {
+                section.kbHighlightIndex = i
+                return
+            }
+        }
+        section.kbHighlightIndex = 0
+    }
+
+    function handleKey(event) {
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            if (!section.isExpanded) {
+                section.isExpanded = true
+                section.syncKbToCurrent()
+            } else {
+                if (section.kbHighlightIndex >= 0 && section.sounds && section.kbHighlightIndex < section.sounds.length) {
+                    section.applySound(section.sounds[section.kbHighlightIndex])
+                }
+                section.isExpanded = false
+            }
+            section.bump()
+            return true
+        }
+        if (section.isExpanded && event.key === Qt.Key_Escape) {
+            section.isExpanded = false
+            section.bump()
+            return true
+        }
+        if (section.isExpanded && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
+            if (!section.sounds || section.sounds.length === 0) return true
+            let dir = event.key === Qt.Key_Down ? 1 : -1
+            let next = section.kbHighlightIndex + dir
+            if (next < 0) next = section.sounds.length - 1
+            if (next >= section.sounds.length) next = 0
+            section.kbHighlightIndex = next
+            section.bump()
+            return true
+        }
+        return false
+    }
+
     Behavior on height {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
@@ -98,7 +143,9 @@ Rectangle {
             radius: 8
             property bool isCurrent: section.settingsManager && modelData === section.settingsManager.notificationSound
 
-            color: soundMouseArea.containsMouse
+            property bool isKbHighlighted: section.kbHighlightIndex === index
+
+            color: (soundMouseArea.containsMouse || isKbHighlighted)
                 ? (section.theme ? Qt.rgba(section.theme.accent.r, section.theme.accent.g, section.theme.accent.b, 0.25) : Qt.rgba(0.65, 0.55, 0.85, 0.25))
                 : (isCurrent
                     ? (section.theme ? Qt.rgba(section.theme.accent.r, section.theme.accent.g, section.theme.accent.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4))

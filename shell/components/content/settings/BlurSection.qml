@@ -22,6 +22,51 @@ Rectangle {
 
     property bool isExpanded: false
 
+    property int kbHighlightIndex: -1
+
+    function syncKbToCurrent() {
+        if (!section.presets) return
+        for (let i = 0; i < section.presets.length; i++) {
+            if (section.presets[i] === section.currentPreset) {
+                section.kbHighlightIndex = i
+                return
+            }
+        }
+        section.kbHighlightIndex = 0
+    }
+
+    function handleKey(event) {
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            if (!section.isExpanded) {
+                section.isExpanded = true
+                section.syncKbToCurrent()
+            } else {
+                if (section.kbHighlightIndex >= 0 && section.presets && section.kbHighlightIndex < section.presets.length) {
+                    section.applyPreset(section.presets[section.kbHighlightIndex])
+                }
+                section.isExpanded = false
+            }
+            section.bump()
+            return true
+        }
+        if (section.isExpanded && event.key === Qt.Key_Escape) {
+            section.isExpanded = false
+            section.bump()
+            return true
+        }
+        if (section.isExpanded && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
+            if (!section.presets || section.presets.length === 0) return true
+            let dir = event.key === Qt.Key_Down ? 1 : -1
+            let next = section.kbHighlightIndex + dir
+            if (next < 0) next = section.presets.length - 1
+            if (next >= section.presets.length) next = 0
+            section.kbHighlightIndex = next
+            section.bump()
+            return true
+        }
+        return false
+    }
+
     function bump() {
         if (modeManager && modeManager.isMode("settings")) modeManager.bump()
     }
@@ -100,7 +145,9 @@ Rectangle {
             radius: 8
             property bool isCurrent: modelData === section.currentPreset
 
-            color: presetMouseArea.containsMouse
+            property bool isKbHighlighted: section.kbHighlightIndex === index
+
+            color: (presetMouseArea.containsMouse || isKbHighlighted)
                 ? (section.theme ? Qt.rgba(section.theme.accent.r, section.theme.accent.g, section.theme.accent.b, 0.25) : Qt.rgba(0.65, 0.55, 0.85, 0.25))
                 : (isCurrent
                     ? (section.theme ? Qt.rgba(section.theme.accent.r, section.theme.accent.g, section.theme.accent.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4))

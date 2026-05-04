@@ -104,6 +104,19 @@ Item {
             if (modeManager.isMode("settings")) {
                 loadBlurPresets()
                 loadNotificationSounds()
+                focusTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: focusTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: {
+            if (settingsLayer && modeManager.isMode("settings")) {
+                settingsLayer.forceActiveFocus()
             }
         }
     }
@@ -114,6 +127,8 @@ Item {
             if (modeManager.isMode("settings")) {
                 loadBlurPresets()
                 loadNotificationSounds()
+                settingsList.currentIndex = -1
+                focusTimer.restart()
             }
         }
     }
@@ -161,8 +176,54 @@ Item {
             if (modeManager.isMode("settings")) {
                 modeManager.bump()
             }
+
+            // delegate to current section first
+            let curLoader = settingsList.itemAtIndex(settingsList.currentIndex)
+            if (curLoader && curLoader.item && curLoader.item.handleKey) {
+                if (curLoader.item.handleKey(event)) {
+                    event.accepted = true
+                    return
+                }
+            }
+
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
+                event.accepted = true
+                return
+            }
+
+            let count = settingsList.count
+            if (count === 0) return
+
+            if (event.key === Qt.Key_Down) {
+                let next = settingsList.currentIndex + 1
+                if (next >= count) next = 0
+                settingsList.currentIndex = next
+                settingsList.positionViewAtIndex(next, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Up) {
+                let prev = settingsList.currentIndex - 1
+                if (prev < 0) prev = count - 1
+                settingsList.currentIndex = prev
+                settingsList.positionViewAtIndex(prev, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Home) {
+                settingsList.currentIndex = 0
+                settingsList.positionViewAtIndex(0, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_End) {
+                settingsList.currentIndex = count - 1
+                settingsList.positionViewAtIndex(count - 1, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_PageDown) {
+                let next = Math.min(count - 1, settingsList.currentIndex + 3)
+                settingsList.currentIndex = next
+                settingsList.positionViewAtIndex(next, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_PageUp) {
+                let prev = Math.max(0, settingsList.currentIndex - 3)
+                settingsList.currentIndex = prev
+                settingsList.positionViewAtIndex(prev, ListView.Contain)
                 event.accepted = true
             }
         }
@@ -302,6 +363,19 @@ Item {
                 clip: true
 
                 boundsBehavior: Flickable.StopAtBounds
+
+                currentIndex: -1
+
+                highlight: Rectangle {
+                    color: "transparent"
+                    border.width: 2
+                    border.color: root.theme ? root.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
+                    radius: 22
+                    z: 2
+                }
+                highlightFollowsCurrentItem: true
+                highlightMoveDuration: 200
+                highlightResizeDuration: 200
 
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AlwaysOff
