@@ -9,6 +9,7 @@ $XDG_STATE_HOME/mugen-shell/notified.json to prevent duplicates.
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -17,9 +18,9 @@ from datetime import datetime, timedelta
 def paths():
     data_home = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
     state_home = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
-    events = os.path.join(data_home, "mugen-shell", "events.json")
+    db = os.path.join(data_home, "mugen-shell", "calendar.db")
     fired = os.path.join(state_home, "mugen-shell", "notified.json")
-    return events, fired
+    return db, fired
 
 
 def load_json(path, default):
@@ -56,9 +57,27 @@ def prune_old_fired(fired_set, now):
     return cleaned
 
 
+def fetch_today(db_path, today):
+    if not os.path.exists(db_path):
+        return []
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT id, time, title FROM events WHERE date = ? ORDER BY time",
+            (today,),
+        ).fetchall()
+        conn.close()
+        return [
+            {"id": r["id"], "time": r["time"] or "", "title": r["title"]}
+            for r in rows
+        ]
+    except sqlite3.Error:
+        return []
+
+
 def main():
-    events_path, fired_path = paths()
-    events_data = load_json(events_path, {"events": []})
+    db_path, fired_path = paths()
     fired_data = load_json(fired_path, {"fired": []})
     fired_set = set(fired_data.get("fired", []))
 
@@ -66,14 +85,12 @@ def main():
     today = now.strftime("%Y-%m-%d")
     current_hm = now.strftime("%H:%M")
 
+    events = fetch_today(db_path, today)
     new_keys = []
-    for event in events_data.get("events", []):
-        if event.get("date") != today:
-            continue
-
-        eid = event.get("id", "")
-        title = event.get("title", "")
-        etime = event.get("time", "")
+    for event in events:
+        eid = event["id"]
+        title = event["title"]
+        etime = event["time"]
         if not eid or not title:
             continue
 

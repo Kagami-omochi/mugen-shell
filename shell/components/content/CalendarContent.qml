@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import Quickshell
 import Quickshell.Io
 
 Item {
@@ -52,6 +53,13 @@ Item {
         return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t)
     }
 
+    readonly property bool isTimeFieldInvalid: {
+        let t = formTime
+        if (!t) return false
+        if (t.length < 5) return false
+        return !isValidTime(t)
+    }
+
     function submitEvent() {
         let title = formTitle.trim()
         if (!title) return
@@ -96,43 +104,47 @@ Item {
         eventsByDate = idx
     }
 
-    function genEventId() {
-        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+    function rangeForMonth(year, month) {
+        let pad = n => n < 10 ? "0" + n : "" + n
+        let prevYear = month === 1 ? year - 1 : year
+        let prevMonth = month === 1 ? 12 : month - 1
+        let nextYear = month === 12 ? year + 1 : year
+        let nextMonth = month === 12 ? 1 : month + 1
+        let start = prevYear + "-" + pad(prevMonth) + "-01"
+        let lastDay = new Date(nextYear, nextMonth, 0).getDate()
+        let end = nextYear + "-" + pad(nextMonth) + "-" + pad(lastDay)
+        return [start, end]
+    }
+
+    function reloadEvents() {
+        let r = rangeForMonth(monthHeader.currentYear, monthHeader.currentMonth)
+        loadEventsProcess.command = [
+            "python3", Quickshell.shellDir + "/scripts/calendar-cli.py",
+            "list-range", "--start", r[0], "--end", r[1]
+        ]
+        loadEventsProcess.running = true
     }
 
     function addEvent(date, title, time) {
         if (!date || !title) return
-        let next = events.slice()
-        next.push({
-            id: genEventId(),
-            date: date,
-            title: title,
-            time: time || ""
-        })
-        events = next
-        rebuildIndex()
-        saveEvents()
+        addEventProcess.command = [
+            "python3", Quickshell.shellDir + "/scripts/calendar-cli.py",
+            "add", "--date", date, "--title", title, "--time", time || ""
+        ]
+        addEventProcess.running = true
     }
 
     function deleteEvent(id) {
-        events = events.filter(e => e.id !== id)
-        rebuildIndex()
-        saveEvents()
-    }
-
-    function saveEvents() {
-        let json = JSON.stringify({ events: events })
-        let escaped = json.replace(/'/g, "'\\''")
-        saveEventsProcess.command = [
-            "sh", "-c",
-            "d=\"${XDG_DATA_HOME:-$HOME/.local/share}/mugen-shell\"; mkdir -p \"$d\" && printf '%s' '" + escaped + "' > \"$d/events.json\""
+        if (!id) return
+        deleteEventProcess.command = [
+            "python3", Quickshell.shellDir + "/scripts/calendar-cli.py",
+            "delete", "--id", id
         ]
-        saveEventsProcess.running = true
+        deleteEventProcess.running = true
     }
 
     Process {
         id: loadEventsProcess
-        command: ["sh", "-c", "f=\"${XDG_DATA_HOME:-$HOME/.local/share}/mugen-shell/events.json\"; [ -f \"$f\" ] && cat \"$f\" || printf '{}'"]
         running: false
 
         property string output: ""
@@ -155,9 +167,15 @@ Item {
     }
 
     Process {
-        id: saveEventsProcess
-        command: ["true"]
+        id: addEventProcess
         running: false
+        onExited: () => root.reloadEvents()
+    }
+
+    Process {
+        id: deleteEventProcess
+        running: false
+        onExited: () => root.reloadEvents()
     }
 
     MouseArea {
@@ -758,25 +776,26 @@ Item {
                             width: parent.width
                             height: modeManager.scale(24)
 
-                            Row {
+                            RowLayout {
                                 anchors.fill: parent
                                 spacing: modeManager.scale(10)
 
                                 Text {
-                                    text: modelData.time || "—"
-                                    width: modeManager.scale(48)
-                                    height: parent.height
+                                    text: modelData.time || "All day"
+                                    Layout.preferredWidth: modeManager.scale(60)
+                                    Layout.fillHeight: true
                                     color: modelData.time ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)) : (theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1))
                                     font.pixelSize: modeManager.scale(12)
                                     font.weight: modelData.time ? Font.Medium : Font.Light
+                                    font.italic: !modelData.time
                                     font.family: "M PLUS 2"
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
                                 Text {
                                     text: modelData.title
-                                    width: modeManager.scale(220)
-                                    height: parent.height
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
                                     color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
                                     font.pixelSize: modeManager.scale(13)
                                     font.family: "M PLUS 2"
@@ -785,8 +804,8 @@ Item {
                                 }
 
                                 Item {
-                                    width: modeManager.scale(20)
-                                    height: parent.height
+                                    Layout.preferredWidth: modeManager.scale(20)
+                                    Layout.fillHeight: true
 
                                     Text {
                                         anchors.centerIn: parent
@@ -812,7 +831,7 @@ Item {
 
                     Text {
                         visible: root.modalEvents.length === 0
-                        text: "No events"
+                        text: "Nothing scheduled"
                         color: theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1)
                         font.pixelSize: modeManager.scale(12)
                         font.family: "M PLUS 2"
@@ -829,43 +848,84 @@ Item {
                     opacity: 0.4
                 }
 
-                Rectangle {
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: modeManager.scale(30)
-                    color: "transparent"
-                    border.width: 1
-                    border.color: titleInput.activeFocus
-                        ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                        : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
-                    radius: modeManager.scale(8)
+                    spacing: modeManager.scale(8)
 
-                    Behavior on border.color { ColorAnimation { duration: 200 } }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: modeManager.scale(30)
+                        color: "transparent"
+                        border.width: 1
+                        border.color: titleInput.activeFocus
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
+                        radius: modeManager.scale(8)
 
-                    TextInput {
-                        id: titleInput
-                        anchors.fill: parent
-                        anchors.leftMargin: modeManager.scale(10)
-                        anchors.rightMargin: modeManager.scale(10)
-                        text: root.formTitle
-                        onTextChanged: root.formTitle = text
-                        color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
-                        selectionColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
-                        font.pixelSize: modeManager.scale(13)
-                        font.family: "M PLUS 2"
-                        verticalAlignment: TextInput.AlignVCenter
-                        clip: true
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Title"
-                            visible: !titleInput.text
-                            color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
+                        TextInput {
+                            id: titleInput
+                            anchors.fill: parent
+                            anchors.leftMargin: modeManager.scale(10)
+                            anchors.rightMargin: modeManager.scale(10)
+                            text: root.formTitle
+                            onTextChanged: root.formTitle = text
+                            color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                            selectionColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
                             font.pixelSize: modeManager.scale(13)
                             font.family: "M PLUS 2"
+                            verticalAlignment: TextInput.AlignVCenter
+                            clip: true
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Title"
+                                visible: !titleInput.text
+                                color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
+                                font.pixelSize: modeManager.scale(13)
+                                font.family: "M PLUS 2"
+                            }
+
+                            Keys.onReturnPressed: root.submitEvent()
+                            Keys.onEnterPressed: root.submitEvent()
+                        }
+                    }
+
+                    Item {
+                        Layout.preferredWidth: modeManager.scale(54)
+                        Layout.preferredHeight: modeManager.scale(30)
+
+                        Text {
+                            id: addText
+                            anchors.centerIn: parent
+                            text: "Add"
+                            color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
+                            opacity: addHover.containsMouse ? 1 : 0.85
+                            font.pixelSize: modeManager.scale(14)
+                            font.weight: Font.Medium
+                            font.family: "M PLUS 2"
+                            font.letterSpacing: 0.5
+
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                            layer.enabled: addHover.containsMouse
+                            layer.effect: Glow {
+                                samples: 12
+                                radius: modeManager.scale(4)
+                                spread: 0.2
+                                color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.6) : Qt.rgba(0.65, 0.55, 0.85, 0.6)
+                                transparentBorder: true
+                            }
                         }
 
-                        Keys.onReturnPressed: root.submitEvent()
-                        Keys.onEnterPressed: root.submitEvent()
+                        MouseArea {
+                            id: addHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.submitEvent()
+                        }
                     }
                 }
 
@@ -878,9 +938,11 @@ Item {
                         Layout.preferredHeight: modeManager.scale(30)
                         color: "transparent"
                         border.width: 1
-                        border.color: timeInput.activeFocus
-                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                            : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
+                        border.color: root.isTimeFieldInvalid
+                            ? Qt.rgba(1, 0.5, 0.55, 1)
+                            : timeInput.activeFocus
+                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
                         radius: modeManager.scale(8)
                         opacity: root.formAllDay ? 0.4 : 1
 
@@ -969,42 +1031,6 @@ Item {
                     Item {
                         Layout.fillWidth: true
                     }
-
-                    Item {
-                        Layout.preferredWidth: modeManager.scale(54)
-                        Layout.preferredHeight: modeManager.scale(30)
-
-                        Text {
-                            id: addText
-                            anchors.centerIn: parent
-                            text: "Add"
-                            color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
-                            opacity: addHover.containsMouse ? 1 : 0.85
-                            font.pixelSize: modeManager.scale(14)
-                            font.weight: Font.Medium
-                            font.family: "M PLUS 2"
-                            font.letterSpacing: 0.5
-
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
-
-                            layer.enabled: addHover.containsMouse
-                            layer.effect: Glow {
-                                samples: 12
-                                radius: modeManager.scale(4)
-                                spread: 0.2
-                                color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.6) : Qt.rgba(0.65, 0.55, 0.85, 0.6)
-                                transparentBorder: true
-                            }
-                        }
-
-                        MouseArea {
-                            id: addHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.submitEvent()
-                        }
-                    }
                 }
             }
         }
@@ -1020,17 +1046,23 @@ Item {
         target: modeManager
         function onCurrentModeChanged() {
             if (modeManager.isMode("calendar")) {
-                loadEventsProcess.running = true
+                root.reloadEvents()
             } else {
                 root.modalOpen = false
             }
         }
     }
 
+    Connections {
+        target: monthHeader
+        function onCurrentMonthChanged() { root.reloadEvents() }
+        function onCurrentYearChanged() { root.reloadEvents() }
+    }
+
     Component.onCompleted: {
         if (modeManager) {
             modeManager.registerMode("calendar", root)
         }
-        loadEventsProcess.running = true
+        root.reloadEvents()
     }
 }
