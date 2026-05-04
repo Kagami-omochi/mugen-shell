@@ -637,13 +637,21 @@ Item {
                                 property bool hasEvents: cellDateKey ? root.eventsForDate(cellDateKey).length > 0 : false
 
                                 Item {
+                                    id: highlightLayer
                                     anchors.centerIn: parent
                                     width: modeManager.scale(56)
                                     height: modeManager.scale(56)
 
                                     property bool shouldShow: isToday || isSelected
+                                    property color highlightColor: isToday
+                                        ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                        : Qt.rgba(0.75, 0.75, 0.8, 1)
                                     opacity: shouldShow ? 1.0 : 0.0
                                     visible: opacity > 0.01
+
+                                    Behavior on highlightColor {
+                                        ColorAnimation { duration: 300; easing.type: Easing.OutCubic }
+                                    }
 
                                     Behavior on opacity {
                                         NumberAnimation {
@@ -662,7 +670,7 @@ Item {
                                             width: modeManager.scale(40 + index * 3)
                                             height: modeManager.scale(40 + index * 3)
                                             radius: modeManager.scale(40 + index * 3) / 2
-                                            color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.12 - index * 0.025) : Qt.rgba(0.65, 0.55, 0.85, 0.12 - index * 0.025)
+                                            color: Qt.rgba(highlightLayer.highlightColor.r, highlightLayer.highlightColor.g, highlightLayer.highlightColor.b, 0.12 - index * 0.025)
                                             border.width: 0
 
                                             property real randomAngle: Math.random() * Math.PI * 2
@@ -745,7 +753,7 @@ Item {
                                                 samples: 24 + index * 4
                                                 radius: modeManager.scale(16 + index * 4)
                                                 spread: 0.7 - index * 0.1
-                                                color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1.0)
+                                                color: highlightLayer.highlightColor
                                                 transparentBorder: true
                                             }
 
@@ -791,7 +799,7 @@ Item {
                                         samples: 16
                                         radius: modeManager.scale(8)
                                         spread: 0.4
-                                        color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5) : Qt.rgba(0.65, 0.55, 0.85, 0.5)
+                                        color: Qt.rgba(highlightLayer.highlightColor.r, highlightLayer.highlightColor.g, highlightLayer.highlightColor.b, 0.5)
                                         transparentBorder: true
                                     }
                                 }
