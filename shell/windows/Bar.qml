@@ -635,6 +635,7 @@ PanelWindow {
         }
     }
 
+
     Loader {
         id: screenshotGalleryLoader
         anchors.fill: parent

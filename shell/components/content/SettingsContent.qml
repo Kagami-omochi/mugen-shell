@@ -401,6 +401,7 @@ Item {
                             case "notificationSound": return notificationSoundSection
                             case "lockTimer": return lockTimerSection
                             case "aiConfig": return aiConfigSection
+                            case "keyboardShortcuts": return keyboardShortcutsSection
                             default: return null
                         }
                     }
@@ -416,6 +417,7 @@ Item {
                     settingsModel.append({ "type": "notificationSound" })
                     settingsModel.append({ "type": "lockTimer" })
                     settingsModel.append({ "type": "aiConfig" })
+                    settingsModel.append({ "type": "keyboardShortcuts" })
                 }
             }
         }
@@ -504,6 +506,14 @@ Item {
             modeManager: root.modeManager
             onEditConfig: root.openAiConfig()
             onRestartService: root.restartAi()
+        }
+    }
+
+    Component {
+        id: keyboardShortcutsSection
+        Settings.KeyboardShortcutsSection {
+            theme: root.theme
+            modeManager: root.modeManager
         }
     }
 
