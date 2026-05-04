@@ -20,6 +20,59 @@ Item {
     property var events: []
     property var eventsByDate: ({})
 
+    property bool modalOpen: false
+    property string modalDate: ""
+    property string formTitle: ""
+    property string formTime: ""
+    property bool formAllDay: false
+    property var modalEvents: (modalDate && eventsByDate[modalDate]) ? eventsByDate[modalDate] : []
+
+    function openEventModal(key) {
+        modalDate = key
+        formTitle = ""
+        formTime = ""
+        formAllDay = false
+        modalOpen = true
+    }
+
+    function closeEventModal() {
+        modalOpen = false
+    }
+
+    function formatTimeInput(text) {
+        if (text.indexOf(":") >= 0) return text.substring(0, 5)
+        let digits = text.replace(/[^\d]/g, "").substring(0, 4)
+        if (digits.length === 0) return ""
+        if (digits.length <= 2) return digits
+        return digits.substring(0, 2) + ":" + digits.substring(2)
+    }
+
+    function isValidTime(t) {
+        return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t)
+    }
+
+    function submitEvent() {
+        let title = formTitle.trim()
+        if (!title) return
+        let t = ""
+        if (!formAllDay) {
+            let raw = formTime.trim()
+            if (isValidTime(raw)) t = raw
+        }
+        addEvent(modalDate, title, t)
+        formTitle = ""
+        formTime = ""
+    }
+
+    function formatModalDate(key) {
+        if (!key) return ""
+        let parts = key.split("-")
+        if (parts.length !== 3) return key
+        let names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        let monthName = names[parseInt(parts[1]) - 1] || parts[1]
+        return monthName + " " + parseInt(parts[2]) + ", " + parts[0]
+    }
+
     function dateKey(year, month, day) {
         let m = month < 10 ? "0" + month : "" + month
         let d = day < 10 ? "0" + day : "" + day
@@ -219,6 +272,7 @@ Item {
             }
 
             Item {
+                id: calendarWrapper
                 Layout.preferredWidth: modeManager.scale(480)
                 Layout.preferredHeight: modeManager.scale(360)
                 Layout.alignment: Qt.AlignHCenter
@@ -599,13 +653,10 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: dayNumber > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: dayNumber > 0
+                                    enabled: dayNumber > 0 && isCurrentMonth
                                     onClicked: {
-                                        if (calendarGrid.selectedIndex === index) {
-                                            calendarGrid.selectedIndex = -1
-                                        } else {
-                                            calendarGrid.selectedIndex = index
-                                        }
+                                        calendarGrid.selectedIndex = index
+                                        root.openEventModal(cellDateKey)
                                     }
                                 }
                             }
@@ -616,11 +667,360 @@ Item {
         }
     }
 
+    Item {
+        id: eventModal
+        parent: calendarWrapper
+        anchors.fill: parent
+        z: 10
+        visible: opacity > 0.01
+        opacity: root.modalOpen ? 1 : 0
+        focus: root.modalOpen
+
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+        }
+
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                root.closeEventModal()
+                event.accepted = true
+            }
+        }
+
+        Rectangle {
+            id: modalDimBg
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.25)
+            radius: modeManager.scale(26)
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.closeEventModal()
+            }
+        }
+
+        Rectangle {
+            id: modalPanel
+            anchors.centerIn: parent
+            width: modeManager.scale(360)
+            height: modalContent.implicitHeight + modeManager.scale(36)
+            color: Qt.rgba(0.05, 0.05, 0.08, 0.92)
+            radius: modeManager.scale(18)
+            border.width: 1
+            border.color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.25) : Qt.rgba(0.65, 0.55, 0.85, 0.25)
+
+            layer.enabled: true
+            layer.effect: Glow {
+                samples: 28
+                radius: modeManager.scale(16)
+                spread: 0.4
+                color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.30) : Qt.rgba(0.65, 0.55, 0.85, 0.30)
+                transparentBorder: true
+            }
+
+            MouseArea {
+                anchors.fill: parent
+            }
+
+            ColumnLayout {
+                id: modalContent
+                anchors.fill: parent
+                anchors.margins: modeManager.scale(18)
+                spacing: modeManager.scale(12)
+
+                Text {
+                    text: root.formatModalDate(root.modalDate)
+                    color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                    font.pixelSize: modeManager.scale(16)
+                    font.weight: Font.Medium
+                    font.family: "M PLUS 2"
+                    Layout.alignment: Qt.AlignHCenter
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 16
+                        radius: modeManager.scale(6)
+                        spread: 0.3
+                        color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+                        transparentBorder: true
+                    }
+                }
+
+                Column {
+                    Layout.fillWidth: true
+                    spacing: modeManager.scale(6)
+
+                    Repeater {
+                        model: root.modalEvents
+                        delegate: Item {
+                            width: parent.width
+                            height: modeManager.scale(24)
+
+                            Row {
+                                anchors.fill: parent
+                                spacing: modeManager.scale(10)
+
+                                Text {
+                                    text: modelData.time || "—"
+                                    width: modeManager.scale(48)
+                                    height: parent.height
+                                    color: modelData.time ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)) : (theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1))
+                                    font.pixelSize: modeManager.scale(12)
+                                    font.weight: modelData.time ? Font.Medium : Font.Light
+                                    font.family: "M PLUS 2"
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Text {
+                                    text: modelData.title
+                                    width: modeManager.scale(220)
+                                    height: parent.height
+                                    color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                                    font.pixelSize: modeManager.scale(13)
+                                    font.family: "M PLUS 2"
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Item {
+                                    width: modeManager.scale(20)
+                                    height: parent.height
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "✕"
+                                        color: deleteHover.containsMouse ? Qt.rgba(1, 0.5, 0.55, 1) : (theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1))
+                                        opacity: deleteHover.containsMouse ? 1 : 0.6
+                                        font.pixelSize: modeManager.scale(12)
+
+                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                                    }
+
+                                    MouseArea {
+                                        id: deleteHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.deleteEvent(modelData.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Text {
+                        visible: root.modalEvents.length === 0
+                        text: "No events"
+                        color: theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1)
+                        font.pixelSize: modeManager.scale(12)
+                        font.family: "M PLUS 2"
+                        font.italic: true
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.12)
+                    opacity: 0.4
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: modeManager.scale(30)
+                    color: "transparent"
+                    border.width: 1
+                    border.color: titleInput.activeFocus
+                        ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                        : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
+                    radius: modeManager.scale(8)
+
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                    TextInput {
+                        id: titleInput
+                        anchors.fill: parent
+                        anchors.leftMargin: modeManager.scale(10)
+                        anchors.rightMargin: modeManager.scale(10)
+                        text: root.formTitle
+                        onTextChanged: root.formTitle = text
+                        color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                        selectionColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+                        font.pixelSize: modeManager.scale(13)
+                        font.family: "M PLUS 2"
+                        verticalAlignment: TextInput.AlignVCenter
+                        clip: true
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Title"
+                            visible: !titleInput.text
+                            color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
+                            font.pixelSize: modeManager.scale(13)
+                            font.family: "M PLUS 2"
+                        }
+
+                        Keys.onReturnPressed: root.submitEvent()
+                        Keys.onEnterPressed: root.submitEvent()
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: modeManager.scale(8)
+
+                    Rectangle {
+                        Layout.preferredWidth: modeManager.scale(72)
+                        Layout.preferredHeight: modeManager.scale(30)
+                        color: "transparent"
+                        border.width: 1
+                        border.color: timeInput.activeFocus
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
+                        radius: modeManager.scale(8)
+                        opacity: root.formAllDay ? 0.4 : 1
+
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                        TextInput {
+                            id: timeInput
+                            anchors.fill: parent
+                            anchors.leftMargin: modeManager.scale(10)
+                            anchors.rightMargin: modeManager.scale(10)
+                            enabled: !root.formAllDay
+                            text: root.formTime
+                            color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                            selectionColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+                            font.pixelSize: modeManager.scale(13)
+                            font.family: "M PLUS 2"
+                            verticalAlignment: TextInput.AlignVCenter
+                            maximumLength: 5
+
+                            property bool _formatting: false
+
+                            onTextChanged: {
+                                if (_formatting) return
+                                let formatted = root.formatTimeInput(text)
+                                if (formatted !== text) {
+                                    _formatting = true
+                                    text = formatted
+                                    cursorPosition = text.length
+                                    _formatting = false
+                                }
+                                root.formTime = text
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "HH:MM"
+                                visible: !timeInput.text
+                                color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
+                                font.pixelSize: modeManager.scale(13)
+                                font.family: "M PLUS 2"
+                            }
+
+                            Keys.onReturnPressed: root.submitEvent()
+                            Keys.onEnterPressed: root.submitEvent()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: modeManager.scale(76)
+                        Layout.preferredHeight: modeManager.scale(30)
+                        color: root.formAllDay
+                            ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.22) : Qt.rgba(0.65, 0.55, 0.85, 0.22))
+                            : "transparent"
+                        border.width: 1
+                        border.color: root.formAllDay
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
+                        radius: modeManager.scale(8)
+
+                        Behavior on color { ColorAnimation { duration: 200 } }
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "All day"
+                            color: root.formAllDay
+                                ? (theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.95))
+                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.85))
+                            font.pixelSize: modeManager.scale(11)
+                            font.weight: root.formAllDay ? Font.Medium : Font.Light
+                            font.family: "M PLUS 2"
+                            font.letterSpacing: 0.5
+
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.formAllDay = !root.formAllDay
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Item {
+                        Layout.preferredWidth: modeManager.scale(54)
+                        Layout.preferredHeight: modeManager.scale(30)
+
+                        Text {
+                            id: addText
+                            anchors.centerIn: parent
+                            text: "Add"
+                            color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
+                            opacity: addHover.containsMouse ? 1 : 0.85
+                            font.pixelSize: modeManager.scale(14)
+                            font.weight: Font.Medium
+                            font.family: "M PLUS 2"
+                            font.letterSpacing: 0.5
+
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                            layer.enabled: addHover.containsMouse
+                            layer.effect: Glow {
+                                samples: 12
+                                radius: modeManager.scale(4)
+                                spread: 0.2
+                                color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.6) : Qt.rgba(0.65, 0.55, 0.85, 0.6)
+                                transparentBorder: true
+                            }
+                        }
+
+                        MouseArea {
+                            id: addHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.submitEvent()
+                        }
+                    }
+                }
+            }
+        }
+
+        onOpacityChanged: {
+            if (opacity > 0.5 && titleInput) {
+                titleInput.forceActiveFocus()
+            }
+        }
+    }
+
     Connections {
         target: modeManager
         function onCurrentModeChanged() {
             if (modeManager.isMode("calendar")) {
                 loadEventsProcess.running = true
+            } else {
+                root.modalOpen = false
             }
         }
     }
