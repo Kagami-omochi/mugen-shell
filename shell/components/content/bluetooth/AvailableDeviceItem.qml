@@ -16,12 +16,20 @@ Rectangle {
 
     signal pairRequested()
 
+    readonly property bool isHighlighted: deviceMouseArea.containsMouse || deviceItem.ListView.isCurrentItem
+
     height: 60
-    color: deviceMouseArea.containsMouse
+    color: deviceItem.isHighlighted
         ? (theme ? theme.surfaceInsetCardHover : Qt.rgba(0, 0, 0, 0.75))
         : (theme ? theme.surfaceInsetCard : Qt.rgba(0, 0, 0, 0.65))
-    radius: height / 2
-    border.width: 0
+    radius: deviceItem.isHighlighted ? 18 : height / 2
+    border.width: deviceItem.isHighlighted ? 1 : 0
+    border.color: theme
+        ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5)
+        : Qt.rgba(0.65, 0.55, 0.85, 0.5)
+
+    Behavior on radius { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    Behavior on border.width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     layer.enabled: true
     layer.effect: Glow {
@@ -130,5 +138,11 @@ Rectangle {
         cursorShape: Qt.ArrowCursor
         z: -1
         propagateComposedEvents: false
+
+        onEntered: {
+            if (deviceItem.ListView.view) {
+                deviceItem.ListView.view.currentIndex = deviceItem.index
+            }
+        }
     }
 }

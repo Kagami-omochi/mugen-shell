@@ -53,6 +53,21 @@ Item {
                 bluetoothManager.refreshStatus()
                 bluetoothManager.refreshPairedDevices()
                 root.showAvailableDevices = false
+                pairedDeviceList.currentIndex = -1
+                availableDeviceList.currentIndex = -1
+                focusTimer.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: focusTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: {
+            if (bluetoothLayer && modeManager.isMode("bluetooth")) {
+                bluetoothLayer.forceActiveFocus()
             }
         }
     }
@@ -89,6 +104,73 @@ Item {
             }
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_P && !(event.modifiers & Qt.ControlModifier)) {
+                bluetoothManager.togglePower()
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_R && !(event.modifiers & Qt.ControlModifier)) {
+                if (bluetoothManager.isPowered && !bluetoothManager.isScanning) {
+                    bluetoothManager.startScan()
+                    root.showAvailableDevices = true
+                }
+                event.accepted = true
+                return
+            }
+
+            if (event.key === Qt.Key_Tab) {
+                root.showAvailableDevices = !root.showAvailableDevices
+                event.accepted = true
+                return
+            }
+
+            if (!bluetoothManager.isPowered) return
+
+            let activeList = root.showAvailableDevices ? availableDeviceList : pairedDeviceList
+            let count = activeList.count
+            if (count === 0) return
+
+            if (event.key === Qt.Key_Down) {
+                let next = activeList.currentIndex + 1
+                if (next >= count) next = 0
+                activeList.currentIndex = next
+                activeList.positionViewAtIndex(next, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Up) {
+                let prev = activeList.currentIndex - 1
+                if (prev < 0) prev = count - 1
+                activeList.currentIndex = prev
+                activeList.positionViewAtIndex(prev, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Home) {
+                activeList.currentIndex = 0
+                activeList.positionViewAtIndex(0, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_End) {
+                activeList.currentIndex = count - 1
+                activeList.positionViewAtIndex(count - 1, ListView.Contain)
+                event.accepted = true
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                let idx = activeList.currentIndex
+                if (idx < 0) return
+                if (root.showAvailableDevices) {
+                    let dev = bluetoothManager.availableDevices[idx]
+                    if (dev) {
+                        root.pairingDeviceIndex = idx
+                        bluetoothManager.pairDevice(dev.address, dev.name || dev.address)
+                    }
+                } else {
+                    let dev = bluetoothManager.pairedDevices[idx]
+                    if (dev) {
+                        if (!dev.connected) root.connectingDeviceIndex = idx
+                        bluetoothManager.toggleDeviceConnection(dev.address, dev.name, dev.connected)
+                    }
+                }
                 event.accepted = true
             }
         }
@@ -425,6 +507,7 @@ Item {
                     clip: true
 
                     model: bluetoothManager.pairedDevices
+                    currentIndex: -1
 
                     opacity: (bluetoothManager.isPowered && !root.showAvailableDevices) ? 1.0 : 0.0
                     visible: opacity > 0.01
@@ -488,6 +571,7 @@ Item {
                     clip: true
 
                     model: bluetoothManager.availableDevices
+                    currentIndex: -1
 
                     opacity: (bluetoothManager.isPowered && root.showAvailableDevices) ? 1.0 : 0.0
                     visible: opacity > 0.01
@@ -588,6 +672,7 @@ Item {
                 bluetoothManager.refreshStatus()
                 bluetoothManager.refreshPairedDevices()
                 root.showAvailableDevices = false
+                focusTimer.restart()
             }
         }
     }
