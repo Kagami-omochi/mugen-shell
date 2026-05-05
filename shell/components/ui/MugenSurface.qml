@@ -15,6 +15,10 @@ Rectangle {
     property color baseColor: (theme && theme.themeMode === "light") ? lightBase : darkBase
     property color borderColor: (theme && theme.themeMode === "light") ? lightBorderColor : darkBorderColor
 
+    // Multiplied into every animated gradient stop's opacity. Used to dim the
+    // sliding accent gradients in dark mode so they don't fight the deep base.
+    property real gradientStrength: (theme && theme.themeMode === "dark") ? 0.4 : 1.0
+
     property color gradientColor1: Qt.rgba(0.65, 0.55, 0.85, 1.0)
     property color gradientColor2: Qt.rgba(0.45, 0.60, 0.90, 1.0)
     property color gradientColor3: Qt.rgba(0.75, 0.55, 0.80, 1.0)
@@ -95,14 +99,16 @@ Rectangle {
 
     // Fade out opacity when gradient stop position is outside [0,1] range
     function calculateStopOpacity(position, baseOpacity) {
+        var scaled = baseOpacity * gradientStrength;
+
         if (position >= 0.0 && position <= 1.0) {
-            return baseOpacity;
+            return scaled;
         }
 
         var distance = position < 0.0 ? -position : position - 1.0;
 
         // Linear fade: fully transparent beyond 0.2 distance (5.0 = 1/0.2)
-        return distance > 0.2 ? 0.0 : baseOpacity * (1.0 - distance * 5.0);
+        return distance > 0.2 ? 0.0 : scaled * (1.0 - distance * 5.0);
     }
 
     // Allow positions slightly beyond [0,1] for smooth edge transitions
