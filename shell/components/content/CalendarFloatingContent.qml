@@ -125,20 +125,29 @@ Item {
     }
 
     property real gridOpacity: 1.0
+    property real gridShift: 0
 
     SequentialAnimation {
         id: monthFlip
         property int targetMonth: 0
         property int targetYear: 0
+        property real shiftDir: 0
 
-        NumberAnimation { target: root; property: "gridOpacity"; to: 0.35; duration: 130; easing.type: Easing.OutQuad }
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "gridOpacity"; to: 0.0; duration: 160; easing.type: Easing.OutCubic }
+            NumberAnimation { target: root; property: "gridShift"; to: monthFlip.shiftDir * -18; duration: 160; easing.type: Easing.OutCubic }
+        }
         ScriptAction {
             script: {
                 root.currentMonth = monthFlip.targetMonth
                 root.currentYear = monthFlip.targetYear
+                root.gridShift = monthFlip.shiftDir * 18
             }
         }
-        NumberAnimation { target: root; property: "gridOpacity"; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "gridOpacity"; to: 1.0; duration: 280; easing.type: Easing.OutCubic }
+            NumberAnimation { target: root; property: "gridShift"; to: 0; duration: 280; easing.type: Easing.OutCubic }
+        }
     }
 
     function changeMonth(delta) {
@@ -149,13 +158,17 @@ Item {
         if (monthFlip.running) monthFlip.stop()
         monthFlip.targetMonth = m
         monthFlip.targetYear = y
+        monthFlip.shiftDir = delta >= 0 ? 1 : -1
         monthFlip.start()
     }
 
     function jumpToToday() {
+        let delta = (todayYear - currentYear) * 12 + (todayMonth - currentMonth)
+        if (delta === 0) return
         if (monthFlip.running) monthFlip.stop()
         monthFlip.targetMonth = todayMonth
         monthFlip.targetYear = todayYear
+        monthFlip.shiftDir = delta >= 0 ? 1 : -1
         monthFlip.start()
         selectedDate = dateKey(todayYear, todayMonth, todayDay)
     }
@@ -261,10 +274,11 @@ Item {
                         x: Math.random() * width,
                         y: Math.random() * ceiling,
                         r: 0.4 + Math.random() * 1.4,
-                        a: 0.15 + Math.random() * 0.55,
-                        // ~30% of stars get a slow alpha breathing cycle
-                        twinkle: Math.random() < 0.30,
-                        phase: Math.random() * Math.PI * 2
+                        a: 0.18 + Math.random() * 0.55,
+                        // ~35% of stars breathe at varied speeds
+                        twinkle: Math.random() < 0.35,
+                        phase: Math.random() * Math.PI * 2,
+                        speed: 0.7 + Math.random() * 0.9
                     })
                 }
                 stars = list
@@ -272,11 +286,11 @@ Item {
             }
 
             Timer {
-                interval: 120
+                interval: 80
                 repeat: true
-                running: starField.visible
+                running: true
                 onTriggered: {
-                    starField.twinkleTime += 0.12
+                    starField.twinkleTime += 0.18
                     starField.requestPaint()
                 }
             }
@@ -291,45 +305,66 @@ Item {
                 for (let i = 0; i < stars.length; i++) {
                     const s = stars[i]
                     let alpha = s.a
+                    let radius = s.r
                     if (s.twinkle) {
-                        // 0.4 ↔ 1.0 of base alpha, smooth sine
-                        const m = 0.7 + 0.3 * Math.sin(twinkleTime + s.phase)
+                        const phase = Math.sin(twinkleTime * s.speed + s.phase)
+                        // Alpha breathes 0.4 → 1.0 of base for a subtle shimmer
+                        const m = 0.7 + 0.3 * phase
                         alpha = s.a * m
+                        // Tiny size pulse only on bright peaks
+                        radius = s.r * (1 + 0.2 * Math.max(0, phase))
                     }
                     ctx.beginPath()
-                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+                    ctx.arc(s.x, s.y, radius, 0, Math.PI * 2)
                     ctx.fillStyle = "rgba(245, 240, 255, " + alpha + ")"
                     ctx.fill()
                 }
             }
         }
 
-        Common.GlowSvgIcon {
-            id: moonIcon
+        Item {
+            id: moonContainer
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.rightMargin: 32
             anchors.topMargin: 28
             width: 36
             height: 36
-            source: Quickshell.shellDir + "/assets/icons/moon.svg"
-            color: theme
-                ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.85)
-                : Qt.rgba(0.95, 0.93, 0.98, 0.85)
+            transformOrigin: Item.Center
 
-            enableGlow: true
-            glowColor: theme
-                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.45)
-                : Qt.rgba(0.65, 0.55, 0.85, 0.45)
-            glowSamples: 24
-            glowRadius: 12
-            glowSpread: 0.4
+            property real bobY: 0
 
             SequentialAnimation on rotation {
                 loops: Animation.Infinite
-                running: moonIcon.visible
-                NumberAnimation { from: -28; to: -22; duration: 4500; easing.type: Easing.InOutSine }
-                NumberAnimation { from: -22; to: -28; duration: 4500; easing.type: Easing.InOutSine }
+                running: true
+                NumberAnimation { from: -55; to: 5; duration: 2800; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 5; to: -55; duration: 2800; easing.type: Easing.InOutSine }
+            }
+
+            SequentialAnimation on bobY {
+                loops: Animation.Infinite
+                running: true
+                NumberAnimation { from: -6; to: 6; duration: 1800; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 6; to: -6; duration: 1800; easing.type: Easing.InOutSine }
+            }
+
+            transform: Translate { y: moonContainer.bobY }
+
+            Common.GlowSvgIcon {
+                id: moonIcon
+                anchors.fill: parent
+                source: Quickshell.shellDir + "/assets/icons/moon.svg"
+                color: theme
+                    ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.85)
+                    : Qt.rgba(0.95, 0.93, 0.98, 0.85)
+
+                enableGlow: true
+                glowColor: theme
+                    ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.45)
+                    : Qt.rgba(0.65, 0.55, 0.85, 0.45)
+                glowSamples: 24
+                glowRadius: 12
+                glowSpread: 0.4
             }
         }
 
@@ -392,6 +427,8 @@ Item {
                         font.italic: true
                         font.family: "M PLUS 2"
                         font.letterSpacing: 1
+                        opacity: root.gridOpacity
+                        transform: Translate { x: root.gridShift }
                     }
 
                     Item {
@@ -466,6 +503,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     opacity: root.gridOpacity
+                    transform: Translate { x: root.gridShift }
                     columns: 7
                     rowSpacing: 4
                     columnSpacing: 0
@@ -675,12 +713,25 @@ Item {
                             model: root.modalEvents
 
                             delegate: Rectangle {
+                                id: eventRow
                                 width: parent.width
                                 height: 40
                                 radius: 10
                                 color: rowHover.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.025)
                                 border.width: 1
                                 border.color: Qt.rgba(1, 1, 1, rowHover.containsMouse ? 0.10 : 0.05)
+
+                                opacity: 0
+                                property real entryShift: -8
+                                transform: Translate { y: eventRow.entryShift }
+
+                                Component.onCompleted: entryAnim.start()
+
+                                ParallelAnimation {
+                                    id: entryAnim
+                                    NumberAnimation { target: eventRow; property: "opacity"; from: 0; to: 1; duration: 280; easing.type: Easing.OutCubic }
+                                    NumberAnimation { target: eventRow; property: "entryShift"; from: -8; to: 0; duration: 280; easing.type: Easing.OutCubic }
+                                }
 
                                 Behavior on color { ColorAnimation { duration: 150 } }
                                 Behavior on border.color { ColorAnimation { duration: 150 } }
