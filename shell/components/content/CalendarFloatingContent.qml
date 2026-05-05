@@ -193,6 +193,22 @@ Item {
             if (event.key === Qt.Key_Escape) {
                 Qt.quit()
                 event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) {
+                root.changeMonth(-1)
+                event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Right || event.key === Qt.Key_PageDown) {
+                root.changeMonth(1)
+                event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Home) {
+                root.jumpToToday()
+                event.accepted = true
+                return
             }
         }
 
@@ -284,120 +300,19 @@ Item {
                     Layout.fillWidth: true
                     spacing: 2
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-
-                        Item {
-                            Layout.preferredWidth: 22
-                            Layout.preferredHeight: 22
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "‹"
-                                color: prevHover.containsMouse
-                                    ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                    : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
-                                font.pixelSize: 22
-                                font.family: "M PLUS 2"
-                                opacity: prevHover.containsMouse ? 1.0 : 0.55
-
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                Behavior on opacity { NumberAnimation { duration: 200 } }
-                            }
-
-                            MouseArea {
-                                id: prevHover
-                                anchors.fill: parent
-                                anchors.margins: -8
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.changeMonth(-1)
-                            }
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            text: root.monthNames[root.currentMonth - 1] + " " + root.currentYear
-                            color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
-                            font.pixelSize: 30
-                            font.weight: Font.Light
-                            font.italic: true
-                            font.family: "M PLUS 2"
-                            font.letterSpacing: 1
-                        }
-
-                        Item {
-                            Layout.preferredWidth: 22
-                            Layout.preferredHeight: 22
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "›"
-                                color: nextHover.containsMouse
-                                    ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                    : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
-                                font.pixelSize: 22
-                                font.family: "M PLUS 2"
-                                opacity: nextHover.containsMouse ? 1.0 : 0.55
-
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                Behavior on opacity { NumberAnimation { duration: 200 } }
-                            }
-
-                            MouseArea {
-                                id: nextHover
-                                anchors.fill: parent
-                                anchors.margins: -8
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.changeMonth(1)
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.preferredWidth: 60
-                            Layout.preferredHeight: 26
-                            color: todayHover.containsMouse
-                                ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.18) : Qt.rgba(0.65, 0.55, 0.85, 0.18))
-                                : "transparent"
-                            border.width: 1
-                            border.color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
-                            radius: 8
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "Today"
-                                color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
-                                font.pixelSize: 11
-                                font.weight: Font.Medium
-                                font.family: "M PLUS 2"
-                                font.letterSpacing: 0.5
-                            }
-
-                            MouseArea {
-                                id: todayHover
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.jumpToToday()
-                            }
-                        }
-                    }
-
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "～  夢幻  ～"
-                        color: theme ? theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.65)
-                        font.pixelSize: 11
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: root.monthNames[root.currentMonth - 1] + " " + root.currentYear
+                        color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                        font.pixelSize: 30
                         font.weight: Font.Light
                         font.italic: true
                         font.family: "M PLUS 2"
-                        font.letterSpacing: 3
+                        font.letterSpacing: 1
                     }
+
+
                 }
 
                 RowLayout {
@@ -445,7 +360,7 @@ Item {
 
                         delegate: Item {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 36
+                            Layout.preferredHeight: 46
 
                             property int dayNumber: {
                                 const firstDay = new Date(root.currentYear, root.currentMonth - 1, 1)
@@ -478,10 +393,12 @@ Item {
                             property bool hasEvents: cellDateKey ? root.eventsForDate(cellDateKey).length > 0 : false
 
                             Rectangle {
-                                anchors.centerIn: parent
-                                width: 30
-                                height: 30
-                                radius: 15
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                                anchors.topMargin: 4
+                                width: 28
+                                height: 28
+                                radius: 14
                                 color: cellHover.containsMouse && !isToday && !isSelected
                                     ? Qt.rgba(1, 1, 1, 0.06)
                                     : "transparent"
@@ -495,7 +412,9 @@ Item {
                             }
 
                             Text {
-                                anchors.centerIn: parent
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                                anchors.topMargin: 4 + 14 - implicitHeight / 2
                                 text: dayNumber > 0 ? dayNumber : ""
                                 color: {
                                     if (isToday) return Qt.rgba(0.98, 0.98, 1.0, 1.0)
@@ -508,8 +427,8 @@ Item {
                             }
 
                             Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 2
+                                anchors.top: parent.top
+                                anchors.topMargin: 38
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: 4
                                 height: 4
@@ -635,22 +554,37 @@ Item {
                     Column {
                         id: eventsColumn
                         width: parent.width
-                        spacing: 6
+                        spacing: 8
 
                         Repeater {
                             model: root.modalEvents
 
-                            delegate: Item {
+                            delegate: Rectangle {
                                 width: parent.width
-                                height: 26
+                                height: 40
+                                radius: 10
+                                color: rowHover.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.025)
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, rowHover.containsMouse ? 0.10 : 0.05)
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                                MouseArea {
+                                    id: rowHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                }
 
                                 RowLayout {
                                     anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 6
                                     spacing: 10
 
                                     Text {
                                         text: modelData.time || "All day"
-                                        Layout.preferredWidth: 60
+                                        Layout.preferredWidth: 56
                                         color: modelData.time
                                             ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
                                             : (theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1))
@@ -658,12 +592,20 @@ Item {
                                         font.weight: modelData.time ? Font.Medium : Font.Light
                                         font.italic: !modelData.time
                                         font.family: "M PLUS 2"
+                                        font.letterSpacing: 0.4
                                         verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 1
+                                        Layout.preferredHeight: 18
+                                        color: Qt.rgba(1, 1, 1, 0.10)
                                     }
 
                                     Text {
                                         text: modelData.title
                                         Layout.fillWidth: true
+                                        Layout.leftMargin: 2
                                         color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
                                         font.pixelSize: 13
                                         font.family: "M PLUS 2"
@@ -672,7 +614,7 @@ Item {
                                     }
 
                                     Item {
-                                        Layout.preferredWidth: 20
+                                        Layout.preferredWidth: 28
                                         Layout.fillHeight: true
 
                                         Text {
@@ -681,7 +623,7 @@ Item {
                                             color: deleteHover.containsMouse
                                                 ? Qt.rgba(1, 0.5, 0.55, 1)
                                                 : (theme ? theme.textFaint : Qt.rgba(0.55, 0.55, 0.6, 1))
-                                            opacity: deleteHover.containsMouse ? 1 : 0.6
+                                            opacity: deleteHover.containsMouse ? 1 : 0.55
                                             font.pixelSize: 12
 
                                             Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -721,21 +663,24 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    color: "transparent"
+                    Layout.preferredHeight: 38
+                    color: titleInput.activeFocus
+                        ? Qt.rgba(1, 1, 1, 0.04)
+                        : Qt.rgba(1, 1, 1, 0.02)
                     border.width: 1
                     border.color: titleInput.activeFocus
-                        ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                        : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
-                    radius: 8
+                        ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                        : Qt.rgba(1, 1, 1, 0.10)
+                    radius: 10
 
+                    Behavior on color { ColorAnimation { duration: 200 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
 
                     TextInput {
                         id: titleInput
                         anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
                         text: root.formTitle
                         onTextChanged: root.formTitle = text
                         color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
@@ -751,6 +696,7 @@ Item {
                             visible: !titleInput.text
                             color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
                             font.pixelSize: 13
+                            font.italic: true
                             font.family: "M PLUS 2"
                         }
 
@@ -764,26 +710,29 @@ Item {
                     spacing: 8
 
                     Rectangle {
-                        Layout.preferredWidth: 72
-                        Layout.preferredHeight: 30
-                        color: "transparent"
+                        Layout.preferredWidth: 78
+                        Layout.preferredHeight: 38
+                        color: timeInput.activeFocus
+                            ? Qt.rgba(1, 1, 1, 0.04)
+                            : Qt.rgba(1, 1, 1, 0.02)
                         border.width: 1
                         border.color: root.isTimeFieldInvalid
                             ? Qt.rgba(1, 0.5, 0.55, 1)
                             : timeInput.activeFocus
-                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
-                        radius: 8
+                                ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                                : Qt.rgba(1, 1, 1, 0.10)
+                        radius: 10
                         opacity: root.formAllDay ? 0.4 : 1
 
+                        Behavior on color { ColorAnimation { duration: 200 } }
                         Behavior on border.color { ColorAnimation { duration: 200 } }
                         Behavior on opacity { NumberAnimation { duration: 200 } }
 
                         TextInput {
                             id: timeInput
                             anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
                             enabled: !root.formAllDay
                             text: root.formTime
                             color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
@@ -813,6 +762,7 @@ Item {
                                 visible: !timeInput.text
                                 color: theme ? theme.textFaint : Qt.rgba(0.5, 0.5, 0.55, 1)
                                 font.pixelSize: 13
+                                font.italic: true
                                 font.family: "M PLUS 2"
                             }
 
@@ -822,16 +772,16 @@ Item {
                     }
 
                     Rectangle {
-                        Layout.preferredWidth: 76
-                        Layout.preferredHeight: 30
+                        Layout.preferredWidth: 80
+                        Layout.preferredHeight: 38
                         color: root.formAllDay
                             ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.22) : Qt.rgba(0.65, 0.55, 0.85, 0.22))
-                            : "transparent"
+                            : (allDayHover.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.02))
                         border.width: 1
                         border.color: root.formAllDay
-                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                            : (theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.18))
-                        radius: 8
+                            ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                            : Qt.rgba(1, 1, 1, 0.10)
+                        radius: 10
 
                         Behavior on color { ColorAnimation { duration: 200 } }
                         Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -851,6 +801,7 @@ Item {
                         }
 
                         MouseArea {
+                            id: allDayHover
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
@@ -862,21 +813,25 @@ Item {
                         Layout.fillWidth: true
                     }
 
-                    Item {
-                        Layout.preferredWidth: 54
-                        Layout.preferredHeight: 30
+                    Rectangle {
+                        Layout.preferredWidth: 70
+                        Layout.preferredHeight: 38
+                        radius: 10
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, addHover.containsMouse ? 0.42 : 0.30)
+                            : Qt.rgba(0.65, 0.55, 0.85, addHover.containsMouse ? 0.42 : 0.30)
+                        border.width: 0
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "Add"
-                            color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
-                            opacity: addHover.containsMouse ? 1 : 0.85
-                            font.pixelSize: 14
+                            color: theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                            font.pixelSize: 13
                             font.weight: Font.Medium
                             font.family: "M PLUS 2"
                             font.letterSpacing: 0.5
-
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
                         }
 
                         MouseArea {
