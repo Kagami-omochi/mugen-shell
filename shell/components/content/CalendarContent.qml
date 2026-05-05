@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 
 Item {
@@ -395,6 +396,42 @@ Item {
                         spread: 0.5
                         color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.20) : Qt.rgba(0.65, 0.55, 0.85, 0.20)
                         transparentBorder: true
+                    }
+                }
+
+                Item {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.rightMargin: modeManager.scale(14)
+                    anchors.topMargin: modeManager.scale(14)
+                    width: modeManager.scale(22)
+                    height: modeManager.scale(22)
+                    z: 5
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "↗"
+                        color: detachHover.containsMouse
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.7))
+                        opacity: detachHover.containsMouse ? 1 : 0.7
+                        font.pixelSize: modeManager.scale(14)
+                        font.family: "M PLUS 2"
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                    }
+
+                    MouseArea {
+                        id: detachHover
+                        anchors.fill: parent
+                        anchors.margins: -8
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            modeManager.closeAllModes()
+                            Hyprland.dispatch("exec ~/.config/quickshell/mugen-shell/scripts/toggle-calendar.sh")
+                        }
                     }
                 }
 
