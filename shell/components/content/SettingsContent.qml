@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import "../common" as Common
 import "./settings" as Settings
@@ -347,6 +348,37 @@ Item {
                                 settingsManager.resetToDefault()
                             }
                             root.resetAutoCloseTimer()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.preferredWidth: modeManager.scale(22)
+                    Layout.preferredHeight: modeManager.scale(22)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "↗"
+                        color: detachHover.containsMouse
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.7))
+                        opacity: detachHover.containsMouse ? 1 : 0.7
+                        font.pixelSize: modeManager.scale(14)
+                        font.family: "M PLUS 2"
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                    }
+
+                    MouseArea {
+                        id: detachHover
+                        anchors.fill: parent
+                        anchors.margins: -8
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            modeManager.closeAllModes()
+                            Hyprland.dispatch("exec ~/.config/quickshell/mugen-shell/scripts/toggle-settings.sh")
                         }
                     }
                 }
