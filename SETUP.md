@@ -270,8 +270,7 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **PowerMenuContent** - Power menu
 - **ScreenshotGalleryContent** - Screenshot gallery
 - **SettingsContent** - Settings panel (rows in `settings/`)
-- **CalendarContent** - Calendar display (SQLite-backed events, inline modal)
-- **CalendarFloatingContent** - Standalone two-pane Calendar window (detach target)
+- **CalendarFloatingContent** - Standalone two-pane Calendar window with SQLite-backed events (opens in its own window via Super + C)
 - **TimerContent** - Countdown timer UI (idle / running, ring + presets, keyboard control)
 - **SettingsFloatingContent** - Standalone scrolling Settings window (detach target)
 - **AiAssistantContent** - AI chat panel

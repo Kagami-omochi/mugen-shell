@@ -197,7 +197,6 @@ QtObject {
         const known = {
             "normal": true,
             "launcher": true,
-            "calendar": true,
             "wallpaper": true,
             "music": true,
             "notification": true,

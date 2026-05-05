@@ -47,17 +47,6 @@ Item {
             ]
         },
         {
-            name: "Calendar",
-            rows: [
-                { keys: "←→↑↓", desc: "Navigate days" },
-                { keys: "Enter", desc: "Open event modal for selected day" },
-                { keys: "Home", desc: "Jump to today" },
-                { keys: "PgUp / PgDn", desc: "Previous / Next month" },
-                { keys: "Click event row", desc: "Edit event inline (modal)" },
-                { keys: "Tab", desc: "Cycle modal inputs" },
-            ]
-        },
-        {
             name: "Timer",
             rows: [
                 { keys: "0–9", desc: "Type minutes (or M:SS)" },

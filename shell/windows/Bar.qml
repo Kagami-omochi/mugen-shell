@@ -507,21 +507,6 @@ PanelWindow {
     }
 
     Loader {
-        id: calendarLoader
-        anchors.fill: parent
-        z: 2
-        property var modeManagerRef: modeManager
-        property var themeRef: theme
-        active: modeManagerRef.isMode("calendar")
-        sourceComponent: Content.CalendarContent {
-            anchors.fill: parent
-            visible: calendarLoader.modeManagerRef.isMode("calendar")
-            modeManager: calendarLoader.modeManagerRef
-            theme: calendarLoader.themeRef
-        }
-    }
-
-    Loader {
         id: timerLoader
         anchors.fill: parent
         z: 2

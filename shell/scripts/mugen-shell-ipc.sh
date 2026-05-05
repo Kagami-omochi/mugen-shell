@@ -8,7 +8,6 @@ Usage: $0 <mode-name>
 
 Available modes:
   launcher            Open app launcher
-  calendar            Open calendar
   wallpaper           Open wallpaper selector
   music               Open music player
   notification        Open notifications

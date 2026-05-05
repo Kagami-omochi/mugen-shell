@@ -64,10 +64,10 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 - Music player integration (playerctl / MPRIS) with YouTube thumbnail fallback and a seekable glowing progress slider
 - Cava audio visualizer
 - Notification center
-- Calendar with SQLite-backed events (add / edit / inline modal, weekday-tinted grid, today indicator, event dots, monthly count, jump-to-today)
+- Calendar with SQLite-backed events in a standalone night-sky window (purple gradient + starfield + crescent moon, two-pane month grid + events list, add / edit / inline modal, weekday-tinted grid, today ring, event dots, monthly count, jump-to-today)
 - Countdown Timer (`Super + Shift + T`) with preset durations, free-form M:SS input, full keyboard control, glowing progress ring, configurable completion sound, and a live remaining-time pill in the bar
 - Configurable bar date format (Qt date tokens, e.g. `ddd M/d`, `yyyy-MM-dd`)
-- Detach panels — Calendar and Settings can open as standalone floating windows (state synced with the bar via JSON / SQLite + FileView watchers)
+- Detach panel — Settings can open as a standalone floating window (state synced with the bar via JSON + FileView watcher)
 - Clipboard history (`Super + V`) with item limit
 - WiFi / Bluetooth / IME management
 - Speaker / microphone control sharing the volume panel (`Super + U`) with a swap toggle
