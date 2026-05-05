@@ -145,20 +145,34 @@ PanelWindow {
         id: timerManager
 
         onCompleted: {
-            const name = settingsManager ? settingsManager.timerSound : "None"
-            if (name && name !== "None" && name !== "") {
-                timerSoundProcess.command = ["paplay", barWindow.timerSoundsDir + "/" + name]
-                timerSoundProcess.running = true
+            // Open the timer panel only if no other mode is active so we
+            // don't yank focus from a panel the user is already using.
+            // Pass viaIpc=true so HyprlandFocusGrab activates and the bar
+            // actually receives keyboard focus instead of leaving it on
+            // whatever window was previously focused.
+            if (modeManager.isMode("normal")) {
+                modeManager.switchMode("timer", true)
             }
-            timerNotifyProcess.command = [
-                "notify-send",
-                "-a", "Mugen Timer",
-                "-u", "normal",
-                "Timer finished",
-                "Your countdown is up."
-            ]
-            timerNotifyProcess.running = true
         }
+
+        onAlertingChanged: {
+            if (alerting) {
+                barWindow._playTimerSound()
+                timerLoopTimer.restart()
+                timerSafetyTimer.restart()
+            } else {
+                timerLoopTimer.stop()
+                timerSafetyTimer.stop()
+                if (timerSoundProcess.running) timerSoundProcess.running = false
+            }
+        }
+    }
+
+    function _playTimerSound() {
+        const name = settingsManager ? settingsManager.timerSound : "None"
+        if (!name || name === "None" || name === "") return
+        timerSoundProcess.command = ["paplay", barWindow.timerSoundsDir + "/" + name]
+        timerSoundProcess.running = true
     }
 
     Process {
@@ -167,10 +181,22 @@ PanelWindow {
         running: false
     }
 
-    Process {
-        id: timerNotifyProcess
-        command: []
+    Timer {
+        id: timerLoopTimer
+        interval: 4000
+        repeat: true
         running: false
+        onTriggered: barWindow._playTimerSound()
+    }
+
+    Timer {
+        id: timerSafetyTimer
+        interval: 60000
+        repeat: false
+        running: false
+        onTriggered: {
+            if (timerManager.alerting) timerManager.dismissAlert()
+        }
     }
 
     Managers.AudioManager { id: audioManager }

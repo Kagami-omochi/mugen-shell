@@ -154,7 +154,7 @@ RowLayout {
         Layout.leftMargin: scaled(8)
         Layout.preferredWidth: visible ? pillText.implicitWidth + scaled(22) : 0
         Layout.preferredHeight: scaled(26)
-        visible: root.timerManager && root.timerManager.running
+        visible: root.timerManager && (root.timerManager.running || root.timerManager.alerting)
 
         function _formatRemaining(sec) {
             if (sec < 0) sec = 0
@@ -184,7 +184,11 @@ RowLayout {
         Text {
             id: pillText
             anchors.centerIn: parent
-            text: root.timerManager ? timerPill._formatRemaining(root.timerManager.remainingSec) : "00:00"
+            text: {
+                if (!root.timerManager) return "00:00"
+                if (root.timerManager.alerting) return "DONE"
+                return timerPill._formatRemaining(root.timerManager.remainingSec)
+            }
             color: root.theme ? root.theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
             font.pixelSize: root.typo ? scaled(root.typo.clockStyle.size * 0.78) : scaled(11)
             font.weight: Font.Medium

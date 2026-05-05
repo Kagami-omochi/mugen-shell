@@ -18,6 +18,7 @@ Item {
     })
 
     readonly property string visualState: {
+        if (timerManager && timerManager.alerting) return "alerting"
         if (timerManager && timerManager.running) return "running"
         return "idle"
     }
@@ -156,6 +157,19 @@ Item {
 
         Keys.onPressed: (event) => {
             if (modeManager.isMode("timer")) modeManager.bump()
+
+            if (root.visualState === "alerting") {
+                if (event.key === Qt.Key_Space
+                    || event.key === Qt.Key_Escape
+                    || event.key === Qt.Key_Return
+                    || event.key === Qt.Key_Enter
+                    || event.key === Qt.Key_C) {
+                    timerManager.dismissAlert()
+                    event.accepted = true
+                    return
+                }
+                return
+            }
 
             if (event.key === Qt.Key_Escape) {
                 modeManager.closeAllModes()
@@ -629,6 +643,140 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: timerManager.cancel()
                         }
+                    }
+                }
+            }
+        }
+
+        // ────────────────────────── Alerting layout ──────────────────────────
+        RowLayout {
+            id: alertingLayout
+            anchors.centerIn: parent
+            spacing: modeManager.scale(24)
+            opacity: root.visualState === "alerting" ? 1.0 : 0.0
+            visible: opacity > 0.01
+
+            Behavior on opacity {
+                NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+            }
+
+            Item {
+                Layout.preferredWidth: modeManager.scale(116)
+                Layout.preferredHeight: modeManager.scale(116)
+                Layout.alignment: Qt.AlignVCenter
+
+                Rectangle {
+                    id: alertRing
+                    anchors.centerIn: parent
+                    width: modeManager.scale(110)
+                    height: modeManager.scale(110)
+                    radius: width / 2
+                    color: "transparent"
+                    border.width: modeManager.scale(4)
+                    border.color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.95)
+
+                    SequentialAnimation on scale {
+                        loops: Animation.Infinite
+                        running: alertingLayout.visible
+                        NumberAnimation { from: 1.0; to: 1.06; duration: 700; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 1.06; to: 1.0; duration: 700; easing.type: Easing.InOutSine }
+                    }
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 28
+                        radius: modeManager.scale(14)
+                        spread: 0.45
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.65)
+                            : Qt.rgba(0.65, 0.55, 0.85, 0.65)
+                        transparentBorder: true
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "0:00"
+                    color: theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                    font.pixelSize: modeManager.scale(22)
+                    font.weight: Font.Light
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 1
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 20
+                        radius: modeManager.scale(7)
+                        spread: 0.35
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55)
+                            : Qt.rgba(0.65, 0.55, 0.85, 0.55)
+                        transparentBorder: true
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.alignment: Qt.AlignVCenter
+                spacing: modeManager.scale(12)
+
+                Text {
+                    text: "Timer finished"
+                    color: theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                    font.pixelSize: modeManager.scale(15)
+                    font.weight: Font.Medium
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 0.6
+                }
+
+                Text {
+                    text: "Press Space or Stop to dismiss"
+                    color: theme ? theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.65)
+                    font.pixelSize: modeManager.scale(11)
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 0.3
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: modeManager.scale(110)
+                    Layout.preferredHeight: modeManager.scale(36)
+                    Layout.topMargin: modeManager.scale(2)
+                    radius: modeManager.scale(12)
+                    color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, dismissHover.containsMouse ? 0.36 : 0.24) : Qt.rgba(0.65, 0.55, 0.85, 0.24)
+                    border.width: 0
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 24
+                        radius: modeManager.scale(dismissHover.containsMouse ? 14 : 8)
+                        spread: 0.4
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, dismissHover.containsMouse ? 0.6 : 0.40)
+                            : Qt.rgba(0.65, 0.55, 0.85, dismissHover.containsMouse ? 0.6 : 0.40)
+                        transparentBorder: true
+
+                        Behavior on radius { NumberAnimation { duration: 200 } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Stop"
+                        color: theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                        font.pixelSize: modeManager.scale(13)
+                        font.weight: Font.Medium
+                        font.family: "M PLUS 2"
+                        font.letterSpacing: 0.5
+                    }
+
+                    MouseArea {
+                        id: dismissHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: timerManager.dismissAlert()
                     }
                 }
             }

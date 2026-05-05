@@ -17,6 +17,10 @@ QtObject {
     property int durationSec: 0
     property real endTime: 0
     property int pausedRemainingSec: 0
+    // Set when a countdown reaches zero. Cleared when the user dismisses the
+    // alarm (or the safety timeout fires). The bar uses this to drive the
+    // looping completion sound and to auto-open the timer panel.
+    property bool alerting: false
 
     property real now: Date.now()
 
@@ -32,11 +36,19 @@ QtObject {
 
     function start(seconds) {
         if (seconds <= 0) return
+        alerting = false
         durationSec = seconds
         endTime = Date.now() + seconds * 1000
         running = true
         paused = false
         pausedRemainingSec = 0
+        save()
+    }
+
+    function dismissAlert() {
+        if (!alerting) return
+        alerting = false
+        durationSec = 0
         save()
     }
 
@@ -61,6 +73,7 @@ QtObject {
         endTime = 0
         durationSec = 0
         pausedRemainingSec = 0
+        alerting = false
         save()
     }
 
@@ -72,7 +85,8 @@ QtObject {
             "paused": paused,
             "durationSec": durationSec,
             "endTime": endTime,
-            "pausedRemainingSec": pausedRemainingSec
+            "pausedRemainingSec": pausedRemainingSec,
+            "alerting": alerting
         }
         let json = JSON.stringify(payload, null, 2)
         saveProcess.command = [
@@ -97,12 +111,18 @@ QtObject {
             if (s.pausedRemainingSec !== undefined) pausedRemainingSec = s.pausedRemainingSec
             if (s.paused !== undefined) paused = s.paused
             if (s.running !== undefined) running = s.running
+            if (s.alerting !== undefined) alerting = s.alerting
 
             // If running with endTime in the past, treat it as already expired
             if (running && !paused && endTime > 0 && endTime <= Date.now()) {
-                completed()
+                running = false
+                paused = false
+                endTime = 0
+                pausedRemainingSec = 0
+                alerting = true
                 _applyingExternal = false
-                cancel()
+                completed()
+                save()
                 return
             }
 
@@ -120,8 +140,13 @@ QtObject {
         onTriggered: {
             timerManager.now = Date.now()
             if (timerManager.running && !timerManager.paused && timerManager.remainingSec === 0) {
+                timerManager.running = false
+                timerManager.paused = false
+                timerManager.endTime = 0
+                timerManager.pausedRemainingSec = 0
+                timerManager.alerting = true
+                timerManager.save()
                 timerManager.completed()
-                timerManager.cancel()
             }
         }
     }

@@ -67,6 +67,7 @@ Item {
                 { keys: "Click preset", desc: "Start preset duration" },
                 { keys: "Space", desc: "Pause / Resume while running" },
                 { keys: "C", desc: "Cancel running timer" },
+                { keys: "Space / Esc / Enter", desc: "Dismiss alarm when finished" },
             ]
         },
         {
