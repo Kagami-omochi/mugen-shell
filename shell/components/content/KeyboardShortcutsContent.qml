@@ -27,6 +27,7 @@ Item {
                 { keys: "Super+J", desc: "Bluetooth panel" },
                 { keys: "Super+L", desc: "Power menu" },
                 { keys: "Super+,", desc: "Settings" },
+                { keys: "Super+Shift+T", desc: "Timer" },
                 { keys: "Super+/", desc: "This shortcuts panel" },
                 { keys: "Super+Return", desc: "Terminal" },
                 { keys: "Super+B", desc: "Browser" },
@@ -54,6 +55,18 @@ Item {
                 { keys: "PgUp / PgDn", desc: "Previous / Next month" },
                 { keys: "Click event row", desc: "Edit event inline (modal)" },
                 { keys: "Tab", desc: "Cycle modal inputs" },
+            ]
+        },
+        {
+            name: "Timer",
+            rows: [
+                { keys: "0–9", desc: "Type minutes (or M:SS)" },
+                { keys: ":", desc: "Switch to M:SS form" },
+                { keys: "Backspace / Delete", desc: "Erase one / all" },
+                { keys: "Enter", desc: "Start countdown" },
+                { keys: "Click preset", desc: "Start preset duration" },
+                { keys: "Space", desc: "Pause / Resume while running" },
+                { keys: "C", desc: "Cancel running timer" },
             ]
         },
         {

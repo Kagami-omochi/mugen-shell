@@ -20,6 +20,7 @@ Available modes:
   bluetooth           Open Bluetooth panel
   settings            Open settings panel
   screenshot-gallery  Open screenshot gallery
+  timer               Open countdown timer
   close               Close all modules
 
 Examples:

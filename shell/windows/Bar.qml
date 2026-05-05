@@ -141,14 +141,29 @@ PanelWindow {
 
         onCompleted: {
             const name = settingsManager ? settingsManager.timerSound : "None"
-            if (!name || name === "None" || name === "") return
-            timerSoundProcess.command = ["paplay", barWindow.soundsDir + "/" + name]
-            timerSoundProcess.running = true
+            if (name && name !== "None" && name !== "") {
+                timerSoundProcess.command = ["paplay", barWindow.soundsDir + "/" + name]
+                timerSoundProcess.running = true
+            }
+            timerNotifyProcess.command = [
+                "notify-send",
+                "-a", "Mugen Timer",
+                "-u", "normal",
+                "Timer finished",
+                "Your countdown is up."
+            ]
+            timerNotifyProcess.running = true
         }
     }
 
     Process {
         id: timerSoundProcess
+        command: []
+        running: false
+    }
+
+    Process {
+        id: timerNotifyProcess
         command: []
         running: false
     }
