@@ -17,5 +17,8 @@
   },
   "lockTimer": {
     "minutes": 10
+  },
+  "date": {
+    "format": "M/d"
   }
 }

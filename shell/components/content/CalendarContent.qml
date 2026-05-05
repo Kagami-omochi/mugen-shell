@@ -13,7 +13,7 @@ Item {
     property var theme
 
     readonly property var requiredBarSize: ({
-        "height": modeManager.scale(520),
+        "height": modeManager.scale(400),
         "leftMargin": modeManager.scale(650),
         "rightMargin": modeManager.scale(650),
         "topMargin": modeManager.scale(6),
@@ -333,49 +333,7 @@ Item {
 
         ColumnLayout {
             anchors.centerIn: parent
-            spacing: modeManager.scale(28)
-
-            Text {
-                id: detailedClock
-                property string timeString: "--:--:--"
-
-                text: timeString
-                color: (theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.85))
-                font.pixelSize: modeManager.scale(60)
-                font.weight: Font.Light
-                font.family: "M PLUS 2"
-                Layout.alignment: Qt.AlignHCenter
-
-                layer.enabled: true
-                layer.effect: Glow {
-                    samples: 20
-                    radius: modeManager.scale(8)
-                    spread: 0.4
-                    color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5) : Qt.rgba(0.65, 0.55, 0.85, 0.5)
-                    transparentBorder: true
-                }
-
-                Timer {
-                    interval: 1000
-                    repeat: true
-                    running: modeManager.isMode("calendar")
-                    onTriggered: {
-                        const now = new Date();
-                        let hh = now.getHours().toString().padStart(2, "0");
-                        let mm = now.getMinutes().toString().padStart(2, "0");
-                        let ss = now.getSeconds().toString().padStart(2, "0");
-                        detailedClock.timeString = hh + ":" + mm + ":" + ss;
-                    }
-                }
-
-                Component.onCompleted: {
-                    const now = new Date();
-                    let hh = now.getHours().toString().padStart(2, "0");
-                    let mm = now.getMinutes().toString().padStart(2, "0");
-                    let ss = now.getSeconds().toString().padStart(2, "0");
-                    timeString = hh + ":" + mm + ":" + ss;
-                }
-            }
+            spacing: 0
 
             Item {
                 id: calendarWrapper

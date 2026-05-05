@@ -386,6 +386,7 @@ PanelWindow {
             audioManager: audioManager
             musicPlayerManager: musicPlayerManager
             cavaManager: cavaManager
+            settingsManager: settingsManager
         }
 
         Item { Layout.fillWidth: true }

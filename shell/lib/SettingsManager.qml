@@ -4,7 +4,7 @@ import Quickshell.Io
 
 QtObject {
     id: settingsManager
-    
+
     readonly property string configDir: {
         let xdg = Quickshell.env("XDG_CONFIG_HOME")
         if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.config"
@@ -15,7 +15,7 @@ QtObject {
     // shipped with the project (will become a /nix/store path under flake).
     property string defaultSettingsFile: Quickshell.shellDir + "/settings.default.json"
     property string userSettingsFile: configDir + "/settings.json"
-    
+
     // 0 = disabled, otherwise the idle timeout (ms) before a mode auto-closes.
     property int autoCloseTimerInterval: 5000
     property bool barGradientEnabled: true
@@ -24,22 +24,23 @@ QtObject {
     property real animationDurationMultiplier: 1.0
     property string notificationSound: "None"  // filename in assets/sounds/, or "None"
     property int lockTimerMinutes: 10  // hypridle screen-lock idle timeout in minutes
+    property string dateFormat: "M/d"  // Qt date tokens: d, dd, ddd, dddd, M, MM, MMM, MMMM, yy, yyyy
 
     // Suppress save while we are applying values that just came in from disk
     // (either initial load or an external write detected by the file watcher).
     property bool _applyingExternal: false
 
     signal settingsChanged()
-    
+
     Component.onCompleted: {
         loadSettings()
     }
-    
+
     function loadSettings() {
         readSettingsProcess.command = ["cat", userSettingsFile]
         readSettingsProcess.running = true
     }
-    
+
     function saveSettings() {
         if (_applyingExternal) return
 
@@ -62,18 +63,21 @@ QtObject {
             },
             "lockTimer": {
                 "minutes": lockTimerMinutes
+            },
+            "date": {
+                "format": dateFormat
             }
         }
-        
+
         let jsonString = JSON.stringify(settings, null, 2)
-        
+
         saveSettingsProcess.command = [
             "bash", "-c",
             "mkdir -p \"" + configDir + "\" && echo '" + jsonString + "' > \"" + userSettingsFile + "\""
         ]
         saveSettingsProcess.running = true
     }
-    
+
     function resetToDefault() {
         resetProcess.command = [
             "bash", "-c",
@@ -81,7 +85,7 @@ QtObject {
         ]
         resetProcess.running = true
     }
-    
+
     function applySettingsFromJson(jsonString) {
         try {
             let settings = JSON.parse(jsonString)
@@ -97,7 +101,7 @@ QtObject {
                     autoCloseTimerInterval = 0
                 }
             }
-            
+
             if (settings.barBackground) {
                 if (settings.barBackground.gradientEnabled !== undefined) {
                     barGradientEnabled = settings.barBackground.gradientEnabled
@@ -109,7 +113,7 @@ QtObject {
                     batteryIndicatorEnabled = settings.batteryIndicator.enabled
                 }
             }
-            
+
             if (settings.animations) {
                 if (settings.animations.speed !== undefined) {
                     animationSpeed = settings.animations.speed
@@ -131,6 +135,12 @@ QtObject {
                 }
             }
 
+            if (settings.date) {
+                if (settings.date.format !== undefined) {
+                    dateFormat = settings.date.format
+                }
+            }
+
             updateAnimationMultiplier()
 
             _applyingExternal = false
@@ -141,7 +151,7 @@ QtObject {
             console.error("Failed to parse settings JSON:", e)
         }
     }
-    
+
     function updateAnimationMultiplier() {
         switch (animationSpeed) {
             case "slow":
@@ -179,13 +189,13 @@ QtObject {
         command: []
         running: false
         property string output: ""
-        
+
         stdout: SplitParser {
             onRead: data => {
                 readSettingsProcess.output += data
             }
         }
-        
+
         onExited: (exitCode) => {
             if (exitCode === 0 && readSettingsProcess.output.trim().length > 0) {
                 applySettingsFromJson(readSettingsProcess.output)
@@ -195,18 +205,18 @@ QtObject {
             readSettingsProcess.output = ""
         }
     }
-    
+
     property Process readDefaultSettingsProcess: Process {
         command: ["cat", settingsManager.defaultSettingsFile]
         running: false
         property string output: ""
-        
+
         stdout: SplitParser {
             onRead: data => {
                 readDefaultSettingsProcess.output += data
             }
         }
-        
+
         onExited: (exitCode) => {
             if (exitCode === 0 && readDefaultSettingsProcess.output.trim().length > 0) {
                 applySettingsFromJson(readDefaultSettingsProcess.output)
@@ -216,38 +226,38 @@ QtObject {
             readDefaultSettingsProcess.output = ""
         }
     }
-    
+
     property Process saveSettingsProcess: Process {
         command: []
         running: false
-        
+
         stdout: SplitParser {
             onRead: data => {}
         }
-        
+
         stderr: SplitParser {
             onRead: data => {}
         }
-        
+
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 settingsChanged()
             }
         }
     }
-    
+
     property Process resetProcess: Process {
         command: []
         running: false
-        
+
         stdout: SplitParser {
             onRead: data => {}
         }
-        
+
         stderr: SplitParser {
             onRead: data => {}
         }
-        
+
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 loadSettings()
@@ -255,4 +265,3 @@ QtObject {
         }
     }
 }
-

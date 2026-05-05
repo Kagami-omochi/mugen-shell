@@ -439,6 +439,7 @@ Item {
                             case "animation": return animationSection
                             case "notificationSound": return notificationSoundSection
                             case "lockTimer": return lockTimerSection
+                            case "dateFormat": return dateFormatSection
                             case "aiConfig": return aiConfigSection
                             case "keyboardShortcuts": return keyboardShortcutsSection
                             default: return null
@@ -455,6 +456,7 @@ Item {
                     settingsModel.append({ "type": "animation" })
                     settingsModel.append({ "type": "notificationSound" })
                     settingsModel.append({ "type": "lockTimer" })
+                    settingsModel.append({ "type": "dateFormat" })
                     settingsModel.append({ "type": "aiConfig" })
                     settingsModel.append({ "type": "keyboardShortcuts" })
                 }
@@ -532,6 +534,15 @@ Item {
     Component {
         id: lockTimerSection
         Settings.LockTimerSection {
+            theme: root.theme
+            modeManager: root.modeManager
+            settingsManager: root.settingsManager
+        }
+    }
+
+    Component {
+        id: dateFormatSection
+        Settings.DateFormatSection {
             theme: root.theme
             modeManager: root.modeManager
             settingsManager: root.settingsManager
