@@ -232,9 +232,13 @@ PanelWindow {
     property bool previousMuted: audioManager.isMuted
     property bool isInitialized: false
 
+    // Defer the auto-open auto-detection until audio events settle. PipeWire
+    // / pactl-subscribe fire several volume + mute changes during bootup as
+    // sinks register, default-sink swaps, and Bluetooth headphones connect.
+    // Without this, the bar would pop open the volume panel right after login.
     Timer {
-        id: initTimer
-        interval: 500
+        id: settleTimer
+        interval: 2000
         running: false
         repeat: false
         onTriggered: {
@@ -244,13 +248,28 @@ PanelWindow {
         }
     }
 
+    // Hard cap so isInitialized eventually flips even if pactl never quiets.
+    Timer {
+        id: settleHardCap
+        interval: 10000
+        running: false
+        repeat: false
+        onTriggered: {
+            if (!isInitialized) {
+                previousVolume = audioManager.volume
+                previousMuted = audioManager.isMuted
+                isInitialized = true
+            }
+        }
+    }
+
     Connections {
         target: audioManager
 
         function onVolumeChanged() {
-            // Skip during startup initialization
             if (!isInitialized) {
                 previousVolume = audioManager.volume
+                settleTimer.restart()
                 return
             }
 
@@ -265,9 +284,9 @@ PanelWindow {
         }
 
         function onIsMutedChanged() {
-            // Skip during startup initialization
             if (!isInitialized) {
                 previousMuted = audioManager.isMuted
+                settleTimer.restart()
                 return
             }
 
@@ -758,6 +777,7 @@ PanelWindow {
 
     Component.onCompleted: {
         modeManager.listModes()
-        initTimer.start()
+        settleTimer.start()
+        settleHardCap.start()
     }
 }
