@@ -296,9 +296,43 @@ Item {
                 Layout.preferredWidth: 480
                 spacing: 10
 
-                ColumnLayout {
+                RowLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 14
+
+                    Item {
+                        Layout.preferredWidth: 26
+                        Layout.preferredHeight: 26
+
+                        Common.GlowSvgIcon {
+                            anchors.centerIn: parent
+                            width: 18
+                            height: 18
+                            source: Quickshell.shellDir + "/assets/icons/chevron-left.svg"
+                            color: prevHover.containsMouse
+                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.85))
+                            opacity: prevHover.containsMouse ? 1.0 : 0.65
+
+                            enableGlow: prevHover.containsMouse
+                            glowColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5) : Qt.rgba(0.65, 0.55, 0.85, 0.5)
+                            glowSamples: 16
+                            glowRadius: 8
+                            glowSpread: 0.4
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+
+                        MouseArea {
+                            id: prevHover
+                            anchors.fill: parent
+                            anchors.margins: -6
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.changeMonth(-1)
+                        }
+                    }
 
                     Text {
                         Layout.fillWidth: true
@@ -312,7 +346,39 @@ Item {
                         font.letterSpacing: 1
                     }
 
+                    Item {
+                        Layout.preferredWidth: 26
+                        Layout.preferredHeight: 26
 
+                        Common.GlowSvgIcon {
+                            anchors.centerIn: parent
+                            width: 18
+                            height: 18
+                            source: Quickshell.shellDir + "/assets/icons/chevron-right.svg"
+                            color: nextHover.containsMouse
+                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.85))
+                            opacity: nextHover.containsMouse ? 1.0 : 0.65
+
+                            enableGlow: nextHover.containsMouse
+                            glowColor: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.5) : Qt.rgba(0.65, 0.55, 0.85, 0.5)
+                            glowSamples: 16
+                            glowRadius: 8
+                            glowSpread: 0.4
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+
+                        MouseArea {
+                            id: nextHover
+                            anchors.fill: parent
+                            anchors.margins: -6
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.changeMonth(1)
+                        }
+                    }
                 }
 
                 RowLayout {
