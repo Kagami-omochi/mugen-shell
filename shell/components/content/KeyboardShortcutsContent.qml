@@ -211,19 +211,14 @@ Item {
 
         Rectangle {
             id: panel
-            anchors.centerIn: parent
-            width: modeManager.scale(520)
-            height: modeManager.scale(500)
-            color: theme ? theme.surfaceInsetSubtle : Qt.rgba(0, 0, 0, 0.25)
-            radius: modeManager.scale(26)
-            border.width: 1
-            border.color: theme
-                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4)
-                : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+            anchors.fill: parent
+            color: Qt.rgba(0.04, 0.03, 0.08, 0.92)
+            radius: 0
+            border.width: 0
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: modeManager.scale(24)
+                anchors.margins: modeManager.scale(28)
                 spacing: modeManager.scale(16)
 
                 Text {
