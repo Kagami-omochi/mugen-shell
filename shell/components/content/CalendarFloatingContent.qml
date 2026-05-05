@@ -208,101 +208,123 @@ Item {
                 Layout.preferredWidth: 480
                 spacing: 10
 
-                RowLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: 2
 
-                    Item {
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: "‹"
-                            color: prevHover.containsMouse
-                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
-                            font.pixelSize: 22
-                            font.family: "M PLUS 2"
+                        Item {
+                            Layout.preferredWidth: 22
+                            Layout.preferredHeight: 22
 
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Text {
+                                anchors.centerIn: parent
+                                text: "‹"
+                                color: prevHover.containsMouse
+                                    ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                    : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
+                                font.pixelSize: 22
+                                font.family: "M PLUS 2"
+                                opacity: prevHover.containsMouse ? 1.0 : 0.55
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on opacity { NumberAnimation { duration: 200 } }
+                            }
+
+                            MouseArea {
+                                id: prevHover
+                                anchors.fill: parent
+                                anchors.margins: -8
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.changeMonth(-1)
+                            }
                         }
 
-                        MouseArea {
-                            id: prevHover
-                            anchors.fill: parent
-                            anchors.margins: -8
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.changeMonth(-1)
+                        Text {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            text: root.monthNames[root.currentMonth - 1] + " " + root.currentYear
+                            color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                            font.pixelSize: 30
+                            font.weight: Font.Light
+                            font.italic: true
+                            font.family: "M PLUS 2"
+                            font.letterSpacing: 1
+                        }
+
+                        Item {
+                            Layout.preferredWidth: 22
+                            Layout.preferredHeight: 22
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "›"
+                                color: nextHover.containsMouse
+                                    ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                    : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
+                                font.pixelSize: 22
+                                font.family: "M PLUS 2"
+                                opacity: nextHover.containsMouse ? 1.0 : 0.55
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on opacity { NumberAnimation { duration: 200 } }
+                            }
+
+                            MouseArea {
+                                id: nextHover
+                                anchors.fill: parent
+                                anchors.margins: -8
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.changeMonth(1)
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: 60
+                            Layout.preferredHeight: 26
+                            color: todayHover.containsMouse
+                                ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.18) : Qt.rgba(0.65, 0.55, 0.85, 0.18))
+                                : "transparent"
+                            border.width: 1
+                            border.color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+                            radius: 8
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Today"
+                                color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                font.family: "M PLUS 2"
+                                font.letterSpacing: 0.5
+                            }
+
+                            MouseArea {
+                                id: todayHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.jumpToToday()
+                            }
                         }
                     }
 
                     Text {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        text: root.monthNames[root.currentMonth - 1] + " " + root.currentYear
-                        color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
-                        font.pixelSize: 18
-                        font.weight: Font.Medium
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "～  夢幻  ～"
+                        color: theme ? theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.65)
+                        font.pixelSize: 11
+                        font.weight: Font.Light
+                        font.italic: true
                         font.family: "M PLUS 2"
-                    }
-
-                    Item {
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "›"
-                            color: nextHover.containsMouse
-                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.9))
-                            font.pixelSize: 22
-                            font.family: "M PLUS 2"
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-
-                        MouseArea {
-                            id: nextHover
-                            anchors.fill: parent
-                            anchors.margins: -8
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.changeMonth(1)
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: 60
-                        Layout.preferredHeight: 26
-                        color: todayHover.containsMouse
-                            ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.18) : Qt.rgba(0.65, 0.55, 0.85, 0.18))
-                            : "transparent"
-                        border.width: 1
-                        border.color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
-                        radius: 8
-
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Today"
-                            color: theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            font.family: "M PLUS 2"
-                            font.letterSpacing: 0.5
-                        }
-
-                        MouseArea {
-                            id: todayHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.jumpToToday()
-                        }
+                        font.letterSpacing: 3
                     }
                 }
 
