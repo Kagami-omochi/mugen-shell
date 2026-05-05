@@ -35,12 +35,18 @@ ShellRoot {
         if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
         return xdg + "/mugen-shell/sounds"
     }
+    readonly property string timerSoundsDir: {
+        let xdg = Quickshell.env("XDG_DATA_HOME")
+        if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
+        return xdg + "/mugen-shell/timer-sounds"
+    }
 
     property var blurPresets: []
     property bool isLoadingPresets: false
     property string currentPreset: ""
 
     property var notificationSounds: ["None"]
+    property var timerSounds: ["None"]
 
     function loadBlurPresets() {
         if (isLoadingPresets) return
@@ -60,6 +66,10 @@ ShellRoot {
 
     function loadNotificationSounds() {
         listSoundsProcess.running = true
+    }
+
+    function loadTimerSounds() {
+        listTimerSoundsProcess.running = true
     }
 
     function applyNotificationSound(name) {
@@ -84,7 +94,7 @@ ShellRoot {
         if (name !== "None") {
             previewSoundProcess.command = [
                 "paplay",
-                root.soundsDir + "/" + name
+                root.timerSoundsDir + "/" + name
             ]
             previewSoundProcess.running = true
         }
@@ -170,6 +180,28 @@ ShellRoot {
     }
 
     Process {
+        id: listTimerSoundsProcess
+        command: ["sh", "-c", "d=\"" + root.timerSoundsDir + "\"; mkdir -p \"$d\"; ls -1 \"$d\" 2>/dev/null | grep -E '\\.(wav|ogg|mp3|oga|flac)$' || true"]
+        running: false
+        property string output: ""
+
+        stdout: SplitParser {
+            onRead: data => {
+                let trimmed = data.trim()
+                if (trimmed.length > 0) listTimerSoundsProcess.output += trimmed + "\n"
+            }
+        }
+
+        onExited: () => {
+            let sounds = ["None"]
+            let lines = listTimerSoundsProcess.output.split("\n").filter(s => s.length > 0)
+            for (let i = 0; i < lines.length; i++) sounds.push(lines[i])
+            root.timerSounds = sounds
+            listTimerSoundsProcess.output = ""
+        }
+    }
+
+    Process {
         id: previewSoundProcess
         command: []
         running: false
@@ -198,6 +230,9 @@ ShellRoot {
             currentPreset: root.currentPreset
             isLoadingPresets: root.isLoadingPresets
             notificationSounds: root.notificationSounds
+            timerSounds: root.timerSounds
+            soundsDir: root.soundsDir
+            timerSoundsDir: root.timerSoundsDir
 
             onApplyPreset: name => root.applyBlurPreset(name)
             onApplySound: name => root.applyNotificationSound(name)
@@ -208,6 +243,7 @@ ShellRoot {
     Component.onCompleted: {
         loadBlurPresets()
         loadNotificationSounds()
+        loadTimerSounds()
     }
 
     Connections {

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Io
 
 Rectangle {
     id: section
@@ -8,11 +9,12 @@ Rectangle {
     required property var modeManager
     required property var settingsManager
     required property var sounds
+    property string folderPath: ""
 
     signal applySound(string name)
 
     width: parent ? parent.width : 420
-    height: section.isExpanded ? 64 + Math.min(section.sounds.length, 6) * 36 + 12 : 64
+    height: section.isExpanded ? 64 + Math.min(section.sounds.length, 6) * 36 + 36 + 12 : 64
     color: theme ? theme.surfaceInsetSubtle : Qt.rgba(0, 0, 0, 0.25)
     radius: 20
     border.width: 1
@@ -127,10 +129,9 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: soundHeader.bottom
-        anchors.bottom: parent.bottom
+        anchors.bottom: openFolderRow.top
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        anchors.bottomMargin: 12
         clip: true
         model: section.sounds
         visible: section.isExpanded
@@ -189,6 +190,51 @@ Rectangle {
                     section.bump()
                 }
             }
+        }
+    }
+
+    Item {
+        id: openFolderRow
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.bottomMargin: 12
+        height: section.isExpanded ? 30 : 0
+        visible: section.isExpanded
+
+        MouseArea {
+            id: openFolderMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (!section.folderPath || section.folderPath.length === 0) return
+                openFolderProcess.command = ["xdg-open", section.folderPath]
+                openFolderProcess.running = true
+                section.bump()
+            }
+        }
+
+        Text {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Open folder ↗"
+            color: openFolderMouseArea.containsMouse
+                ? (section.theme ? section.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                : (section.theme ? section.theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.65))
+            font.pixelSize: 11
+            font.family: "M PLUS 2"
+            font.letterSpacing: 0.5
+
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+
+        Process {
+            id: openFolderProcess
+            command: []
+            running: false
         }
     }
 }

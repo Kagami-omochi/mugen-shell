@@ -135,6 +135,11 @@ PanelWindow {
         if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
         return xdg + "/mugen-shell/sounds"
     }
+    readonly property string timerSoundsDir: {
+        let xdg = Quickshell.env("XDG_DATA_HOME")
+        if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
+        return xdg + "/mugen-shell/timer-sounds"
+    }
 
     Theme.TimerManager {
         id: timerManager
@@ -142,7 +147,7 @@ PanelWindow {
         onCompleted: {
             const name = settingsManager ? settingsManager.timerSound : "None"
             if (name && name !== "None" && name !== "") {
-                timerSoundProcess.command = ["paplay", barWindow.soundsDir + "/" + name]
+                timerSoundProcess.command = ["paplay", barWindow.timerSoundsDir + "/" + name]
                 timerSoundProcess.running = true
             }
             timerNotifyProcess.command = [

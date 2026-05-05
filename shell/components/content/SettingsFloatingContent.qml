@@ -13,6 +13,9 @@ Item {
     required property string currentPreset
     required property bool isLoadingPresets
     required property var notificationSounds
+    required property var timerSounds
+    property string soundsDir: ""
+    property string timerSoundsDir: ""
 
     signal applyPreset(string name)
     signal applySound(string name)
@@ -184,13 +187,15 @@ Item {
         modeManager: root.modeManager
         settingsManager: root.settingsManager
         sounds: root.notificationSounds
+        folderPath: root.soundsDir
         onApplySound: name => root.applySound(name)
     }}
     Component { id: timerSoundSection; Settings.TimerSoundSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
-        sounds: root.notificationSounds
+        sounds: root.timerSounds
+        folderPath: root.timerSoundsDir
         onApplySound: name => root.applyTimerSound(name)
     }}
     Component { id: lockTimerSection; Settings.LockTimerSection {

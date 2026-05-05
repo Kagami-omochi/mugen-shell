@@ -29,12 +29,18 @@ Item {
         if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
         return xdg + "/mugen-shell/sounds"
     }
+    readonly property string timerSoundsDir: {
+        let xdg = Quickshell.env("XDG_DATA_HOME")
+        if (!xdg || xdg === "") xdg = Quickshell.env("HOME") + "/.local/share"
+        return xdg + "/mugen-shell/timer-sounds"
+    }
 
     property var blurPresets: []
     property bool isLoadingPresets: false
     property string currentPreset: ""
 
     property var notificationSounds: ["None"]
+    property var timerSounds: ["None"]
 
     function loadBlurPresets() {
         if (isLoadingPresets) return
@@ -61,6 +67,10 @@ Item {
         listSoundsProcess.running = true
     }
 
+    function loadTimerSounds() {
+        listTimerSoundsProcess.running = true
+    }
+
     function applyNotificationSound(name) {
         if (settingsManager) {
             settingsManager.notificationSound = name
@@ -84,7 +94,7 @@ Item {
         if (name !== "None") {
             previewSoundProcess.command = [
                 "paplay",
-                soundsDir + "/" + name
+                timerSoundsDir + "/" + name
             ]
             previewSoundProcess.running = true
         }
@@ -120,6 +130,7 @@ Item {
             if (modeManager.isMode("settings")) {
                 loadBlurPresets()
                 loadNotificationSounds()
+                loadTimerSounds()
                 focusTimer.restart()
             }
         }
@@ -143,6 +154,7 @@ Item {
             if (modeManager.isMode("settings")) {
                 loadBlurPresets()
                 loadNotificationSounds()
+                loadTimerSounds()
                 settingsList.currentIndex = -1
                 focusTimer.restart()
             }
@@ -544,6 +556,7 @@ Item {
             modeManager: root.modeManager
             settingsManager: root.settingsManager
             sounds: root.notificationSounds
+            folderPath: root.soundsDir
             onApplySound: name => root.applyNotificationSound(name)
         }
     }
@@ -554,7 +567,8 @@ Item {
             theme: root.theme
             modeManager: root.modeManager
             settingsManager: root.settingsManager
-            sounds: root.notificationSounds
+            sounds: root.timerSounds
+            folderPath: root.timerSoundsDir
             onApplySound: name => root.applyTimerSound(name)
         }
     }
@@ -706,6 +720,35 @@ Item {
             }
             root.notificationSounds = files
             listSoundsProcess.output = ""
+        }
+    }
+
+    Process {
+        id: listTimerSoundsProcess
+        command: [
+            "bash", "-c",
+            "mkdir -p '" + timerSoundsDir + "' && find '" + timerSoundsDir + "' -maxdepth 1 -type f \\( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.oga' -o -iname '*.mp3' -o -iname '*.flac' \\) -printf '%f\\n' | sort"
+        ]
+        running: false
+        property string output: ""
+
+        stdout: SplitParser {
+            onRead: data => {
+                let trimmed = data.trim()
+                if (trimmed.length > 0) {
+                    listTimerSoundsProcess.output += trimmed + "\n"
+                }
+            }
+        }
+
+        onExited: (exitCode) => {
+            let files = ["None"]
+            if (exitCode === 0) {
+                let lines = listTimerSoundsProcess.output.trim().split("\n").filter(l => l.length > 0)
+                files = files.concat(lines)
+            }
+            root.timerSounds = files
+            listTimerSoundsProcess.output = ""
         }
     }
 
