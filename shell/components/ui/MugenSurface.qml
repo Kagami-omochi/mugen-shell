@@ -6,7 +6,7 @@ Rectangle {
     property var theme
     property bool gradientEnabled: true
 
-    readonly property color darkBase: Qt.rgba(28/255, 32/255, 36/255, 0.65)
+    readonly property color darkBase: Qt.rgba(20/255, 22/255, 26/255, 0.82)
     readonly property color darkBorderColor: Qt.rgba(0.35, 0.35, 0.40, 0.40)
 
     readonly property color lightBase: Qt.rgba(0.50, 0.48, 0.58, 0.65)
