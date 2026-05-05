@@ -23,6 +23,14 @@ Item {
         return "idle"
     }
 
+    readonly property bool isUrgent: timerManager
+        && timerManager.running
+        && !timerManager.paused
+        && timerManager.remainingSec > 0
+        && timerManager.remainingSec <= 10
+
+    readonly property color urgentColor: Qt.rgba(0.95, 0.40, 0.45, 1)
+
     property string inputBuffer: ""
     readonly property bool hasInput: parseInputSeconds() > 0
 
@@ -470,7 +478,9 @@ Item {
                         : Qt.rgba(0.62, 0.62, 0.72, 0.18)
                     property color progressColor: timerManager && timerManager.paused
                         ? (theme ? Qt.rgba(theme.textSecondary.r, theme.textSecondary.g, theme.textSecondary.b, 0.85) : Qt.rgba(0.72, 0.72, 0.82, 0.85))
-                        : (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.95))
+                        : (root.isUrgent
+                            ? root.urgentColor
+                            : (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.95)))
                     property real strokeWidth: modeManager.scale(4)
 
                     onProgressChanged: requestPaint()
@@ -509,7 +519,9 @@ Item {
                         spread: 0.35
                         color: timerManager && timerManager.paused
                             ? Qt.rgba(0.72, 0.72, 0.82, 0.30)
-                            : (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                            : (root.isUrgent
+                                ? Qt.rgba(root.urgentColor.r, root.urgentColor.g, root.urgentColor.b, 0.65)
+                                : (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55)))
                         transparentBorder: true
 
                         Behavior on color { ColorAnimation { duration: 300 } }
@@ -521,22 +533,37 @@ Item {
                     spacing: modeManager.scale(2)
 
                     Text {
+                        id: runningTimeText
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: timerManager ? root.formatSec(timerManager.remainingSec) : "00:00"
-                        color: theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                        color: root.isUrgent
+                            ? root.urgentColor
+                            : (theme ? theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95))
                         font.pixelSize: modeManager.scale(22)
                         font.weight: Font.Light
                         font.family: "M PLUS 2"
                         font.letterSpacing: 1
+
+                        Behavior on color { ColorAnimation { duration: 300 } }
+
+                        SequentialAnimation on scale {
+                            loops: Animation.Infinite
+                            running: root.isUrgent
+                            NumberAnimation { from: 1.0; to: 1.07; duration: 180; easing.type: Easing.OutQuad }
+                            NumberAnimation { from: 1.07; to: 1.0; duration: 220; easing.type: Easing.InQuad }
+                            PauseAnimation { duration: 600 }
+                        }
 
                         layer.enabled: true
                         layer.effect: Glow {
                             samples: 20
                             radius: modeManager.scale(7)
                             spread: 0.35
-                            color: theme
-                                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, timerManager && timerManager.paused ? 0.20 : 0.45)
-                                : Qt.rgba(0.65, 0.55, 0.85, 0.45)
+                            color: root.isUrgent
+                                ? Qt.rgba(root.urgentColor.r, root.urgentColor.g, root.urgentColor.b, 0.55)
+                                : (theme
+                                    ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, timerManager && timerManager.paused ? 0.20 : 0.45)
+                                    : Qt.rgba(0.65, 0.55, 0.85, 0.45))
                             transparentBorder: true
 
                             Behavior on color { ColorAnimation { duration: 300 } }

@@ -166,18 +166,31 @@ RowLayout {
             return pad(m) + ":" + pad(s)
         }
 
+        readonly property bool urgent: root.timerManager
+            && root.timerManager.running
+            && !root.timerManager.paused
+            && root.timerManager.remainingSec > 0
+            && root.timerManager.remainingSec <= 10
+
         Rectangle {
             anchors.fill: parent
             radius: scaled(13)
-            property color accent: root.theme ? root.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1)
-            color: pillHover.containsMouse
-                ? Qt.rgba(accent.r, accent.g, accent.b, 0.30)
-                : Qt.rgba(accent.r, accent.g, accent.b, 0.18)
+            property color accent: timerPill.urgent
+                ? Qt.rgba(0.95, 0.40, 0.45, 1)
+                : (root.theme ? root.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+            color: timerPill.urgent
+                ? Qt.rgba(accent.r, accent.g, accent.b, pillHover.containsMouse ? 0.42 : 0.32)
+                : (pillHover.containsMouse
+                    ? Qt.rgba(accent.r, accent.g, accent.b, 0.30)
+                    : Qt.rgba(accent.r, accent.g, accent.b, 0.18))
             border.width: 1
-            border.color: Qt.rgba(accent.r, accent.g, accent.b, root.timerManager && root.timerManager.paused ? 0.30 : 0.50)
+            border.color: timerPill.urgent
+                ? Qt.rgba(accent.r, accent.g, accent.b, 0.72)
+                : Qt.rgba(accent.r, accent.g, accent.b, root.timerManager && root.timerManager.paused ? 0.30 : 0.50)
             opacity: root.timerManager && root.timerManager.paused ? 0.65 : 1.0
 
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on border.color { ColorAnimation { duration: 200 } }
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
 
@@ -190,10 +203,13 @@ RowLayout {
                 return timerPill._formatRemaining(root.timerManager.remainingSec)
             }
             color: root.theme ? root.theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+            opacity: pillHover.containsMouse ? 1.0 : 0.6
             font.pixelSize: root.typo ? scaled(root.typo.clockStyle.size * 0.78) : scaled(11)
             font.weight: Font.Medium
             font.family: root.typo ? root.typo.clockStyle.family : "M PLUS 2"
             font.letterSpacing: 0.5
+
+            Behavior on opacity { NumberAnimation { duration: 200 } }
         }
 
         MouseArea {
