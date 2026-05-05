@@ -13,7 +13,7 @@ Item {
     property var theme
 
     readonly property var requiredBarSize: ({
-        "height": modeManager.scale(440),
+        "height": modeManager.scale(480),
         "leftMargin": modeManager.scale(650),
         "rightMargin": modeManager.scale(650),
         "topMargin": modeManager.scale(6),
