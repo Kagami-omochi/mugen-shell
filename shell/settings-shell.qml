@@ -130,7 +130,7 @@ ShellRoot {
         id: applyPresetProcess
         command: []
         running: false
-        onExited: () => root.getCurrentPresetProcess.running = true
+        onExited: () => getCurrentPresetProcess.running = true
     }
 
     Process {
@@ -140,7 +140,10 @@ ShellRoot {
         property string output: ""
 
         stdout: SplitParser {
-            onRead: data => { listSoundsProcess.output += data }
+            onRead: data => {
+                let trimmed = data.trim()
+                if (trimmed.length > 0) listSoundsProcess.output += trimmed + "\n"
+            }
         }
 
         onExited: () => {

@@ -17,20 +17,6 @@ Item {
     signal applyPreset(string name)
     signal applySound(string name)
 
-    property string selectedSection: "theme"
-
-    readonly property var sectionsList: [
-        { type: "theme",             label: "Theme" },
-        { type: "blur",              label: "Blur" },
-        { type: "timer",             label: "Auto-close timer" },
-        { type: "gradient",          label: "Bar gradient" },
-        { type: "battery",           label: "Battery indicator" },
-        { type: "animation",         label: "Animation speed" },
-        { type: "notificationSound", label: "Notification sound" },
-        { type: "lockTimer",         label: "Lock timer" },
-        { type: "shortcuts",         label: "Keyboard shortcuts" }
-    ]
-
     Rectangle {
         anchors.fill: parent
         color: theme ? theme.surfaceInsetCard : Qt.rgba(0.05, 0.05, 0.08, 0.92)
@@ -42,146 +28,125 @@ Item {
             if (event.key === Qt.Key_Escape) {
                 Qt.quit()
                 event.accepted = true
-                return
-            }
-            if (event.key === Qt.Key_Up) {
-                let idx = root.sectionsList.findIndex(s => s.type === root.selectedSection)
-                if (idx <= 0) idx = root.sectionsList.length
-                root.selectedSection = root.sectionsList[idx - 1].type
-                event.accepted = true
-            } else if (event.key === Qt.Key_Down) {
-                let idx = root.sectionsList.findIndex(s => s.type === root.selectedSection)
-                if (idx < 0 || idx >= root.sectionsList.length - 1) idx = -1
-                root.selectedSection = root.sectionsList[idx + 1].type
-                event.accepted = true
             }
         }
 
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 0
-            spacing: 0
+            anchors.margins: 24
+            spacing: 16
 
-            ColumnLayout {
-                Layout.preferredWidth: 220
-                Layout.fillHeight: true
-                spacing: 0
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 36
+                spacing: 10
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 56
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Settings"
+                    color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
+                    font.pixelSize: 20
+                    font.weight: Font.Light
+                    font.family: "M PLUS 2"
+                    font.letterSpacing: 1.5
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Rectangle {
+                    Layout.preferredWidth: resetText.implicitWidth + 24
+                    Layout.preferredHeight: 28
+                    color: resetMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                    border.width: 1
+                    border.color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.3) : Qt.rgba(0.65, 0.55, 0.85, 0.3)
+                    radius: 14
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 24
-                        text: "Settings"
-                        color: theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
-                        font.pixelSize: 18
+                        id: resetText
+                        anchors.centerIn: parent
+                        text: "Reset"
+                        color: theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.85)
+                        font.pixelSize: 11
                         font.weight: Font.Medium
                         font.family: "M PLUS 2"
                         font.letterSpacing: 0.5
                     }
-                }
 
-                ListView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    model: root.sectionsList
-                    clip: true
-                    spacing: 2
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    delegate: Item {
-                        width: ListView.view.width
-                        height: 38
-
-                        property bool isSelected: modelData.type === root.selectedSection
-
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            anchors.rightMargin: 8
-                            color: isSelected
-                                ? (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.18) : Qt.rgba(0.65, 0.55, 0.85, 0.18))
-                                : (sectionHover.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent")
-                            radius: 8
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.leftMargin: 24
-                            text: modelData.label
-                            color: isSelected
-                                ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
-                                : (theme ? theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.85))
-                            font.pixelSize: 12
-                            font.weight: isSelected ? Font.Medium : Font.Light
-                            font.family: "M PLUS 2"
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-
-                        MouseArea {
-                            id: sectionHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.selectedSection = modelData.type
+                    MouseArea {
+                        id: resetMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (settingsManager) settingsManager.resetToDefault()
                         }
                     }
                 }
             }
 
-            Rectangle {
-                Layout.preferredWidth: 1
-                Layout.fillHeight: true
-                color: theme ? theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.1)
-                opacity: 0.3
-            }
-
-            Item {
+            ListView {
+                id: settingsList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                spacing: 16
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
 
-                Item {
-                    anchors.fill: parent
-                    anchors.margins: 32
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    width: 4
 
-                    Loader {
-                        id: sectionLoader
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
+                    contentItem: Rectangle {
+                        implicitWidth: 4
+                        radius: 2
+                        color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
+                    }
+                }
 
-                        sourceComponent: {
-                            switch (root.selectedSection) {
-                                case "theme":             return themeComp
-                                case "blur":              return blurComp
-                                case "timer":             return timerComp
-                                case "gradient":          return gradientComp
-                                case "battery":           return batteryComp
-                                case "animation":         return animationComp
-                                case "notificationSound": return notificationSoundComp
-                                case "lockTimer":         return lockTimerComp
-                                case "shortcuts":         return shortcutsComp
-                                default:                  return null
-                            }
+                model: ListModel {
+                    id: settingsModel
+                }
+
+                delegate: Loader {
+                    width: settingsList.width
+                    sourceComponent: {
+                        switch (model.type) {
+                            case "theme":             return themeSection
+                            case "blur":              return blurSection
+                            case "timer":             return timerSection
+                            case "gradient":          return gradientSection
+                            case "battery":           return batterySection
+                            case "animation":         return animationSection
+                            case "notificationSound": return notificationSoundSection
+                            case "lockTimer":         return lockTimerSection
+                            case "shortcuts":         return shortcutsSection
+                            default:                  return null
                         }
                     }
+                }
+
+                Component.onCompleted: {
+                    settingsModel.append({ "type": "theme" })
+                    settingsModel.append({ "type": "blur" })
+                    settingsModel.append({ "type": "timer" })
+                    settingsModel.append({ "type": "gradient" })
+                    settingsModel.append({ "type": "battery" })
+                    settingsModel.append({ "type": "animation" })
+                    settingsModel.append({ "type": "notificationSound" })
+                    settingsModel.append({ "type": "lockTimer" })
+                    settingsModel.append({ "type": "shortcuts" })
                 }
             }
         }
     }
 
-    Component { id: themeComp; Settings.ThemeSection {
+    Component { id: themeSection; Settings.ThemeSection {
         theme: root.theme
         modeManager: root.modeManager
     }}
-    Component { id: blurComp; Settings.BlurSection {
+    Component { id: blurSection; Settings.BlurSection {
         theme: root.theme
         modeManager: root.modeManager
         presets: root.blurPresets
@@ -189,39 +154,39 @@ Item {
         isLoadingPresets: root.isLoadingPresets
         onApplyPreset: name => root.applyPreset(name)
     }}
-    Component { id: timerComp; Settings.TimerSection {
+    Component { id: timerSection; Settings.TimerSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
     }}
-    Component { id: gradientComp; Settings.GradientSection {
+    Component { id: gradientSection; Settings.GradientSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
     }}
-    Component { id: batteryComp; Settings.BatterySection {
+    Component { id: batterySection; Settings.BatterySection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
     }}
-    Component { id: animationComp; Settings.AnimationSection {
+    Component { id: animationSection; Settings.AnimationSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
     }}
-    Component { id: notificationSoundComp; Settings.NotificationSoundSection {
+    Component { id: notificationSoundSection; Settings.NotificationSoundSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
         sounds: root.notificationSounds
         onApplySound: name => root.applySound(name)
     }}
-    Component { id: lockTimerComp; Settings.LockTimerSection {
+    Component { id: lockTimerSection; Settings.LockTimerSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
     }}
-    Component { id: shortcutsComp; Settings.KeyboardShortcutsSection {
+    Component { id: shortcutsSection; Settings.KeyboardShortcutsSection {
         theme: root.theme
         modeManager: root.modeManager
     }}
