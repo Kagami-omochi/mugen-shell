@@ -124,18 +124,39 @@ Item {
         if (timeInput) timeInput.text = ""
     }
 
+    property real gridOpacity: 1.0
+
+    SequentialAnimation {
+        id: monthFlip
+        property int targetMonth: 0
+        property int targetYear: 0
+
+        NumberAnimation { target: root; property: "gridOpacity"; to: 0.35; duration: 130; easing.type: Easing.OutQuad }
+        ScriptAction {
+            script: {
+                root.currentMonth = monthFlip.targetMonth
+                root.currentYear = monthFlip.targetYear
+            }
+        }
+        NumberAnimation { target: root; property: "gridOpacity"; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
+    }
+
     function changeMonth(delta) {
         let m = currentMonth + delta
         let y = currentYear
         while (m < 1) { m += 12; y-- }
         while (m > 12) { m -= 12; y++ }
-        currentMonth = m
-        currentYear = y
+        if (monthFlip.running) monthFlip.stop()
+        monthFlip.targetMonth = m
+        monthFlip.targetYear = y
+        monthFlip.start()
     }
 
     function jumpToToday() {
-        currentMonth = todayMonth
-        currentYear = todayYear
+        if (monthFlip.running) monthFlip.stop()
+        monthFlip.targetMonth = todayMonth
+        monthFlip.targetYear = todayYear
+        monthFlip.start()
         selectedDate = dateKey(todayYear, todayMonth, todayDay)
     }
 
@@ -185,7 +206,7 @@ Item {
     Rectangle {
         id: panel
         anchors.fill: parent
-        color: theme ? theme.surfaceInsetCard : Qt.rgba(0.05, 0.05, 0.08, 0.92)
+        color: Qt.rgba(0.04, 0.03, 0.08, 0.92)
         radius: 0
         border.width: 0
 
@@ -229,6 +250,7 @@ Item {
             antialiasing: true
 
             property var stars: []
+            property real twinkleTime: 0
 
             function regenerate() {
                 const list = []
@@ -239,11 +261,24 @@ Item {
                         x: Math.random() * width,
                         y: Math.random() * ceiling,
                         r: 0.4 + Math.random() * 1.4,
-                        a: 0.15 + Math.random() * 0.55
+                        a: 0.15 + Math.random() * 0.55,
+                        // ~30% of stars get a slow alpha breathing cycle
+                        twinkle: Math.random() < 0.30,
+                        phase: Math.random() * Math.PI * 2
                     })
                 }
                 stars = list
                 requestPaint()
+            }
+
+            Timer {
+                interval: 120
+                repeat: true
+                running: starField.visible
+                onTriggered: {
+                    starField.twinkleTime += 0.12
+                    starField.requestPaint()
+                }
             }
 
             onWidthChanged: regenerate()
@@ -255,22 +290,28 @@ Item {
                 ctx.reset()
                 for (let i = 0; i < stars.length; i++) {
                     const s = stars[i]
+                    let alpha = s.a
+                    if (s.twinkle) {
+                        // 0.4 ↔ 1.0 of base alpha, smooth sine
+                        const m = 0.7 + 0.3 * Math.sin(twinkleTime + s.phase)
+                        alpha = s.a * m
+                    }
                     ctx.beginPath()
                     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
-                    ctx.fillStyle = "rgba(245, 240, 255, " + s.a + ")"
+                    ctx.fillStyle = "rgba(245, 240, 255, " + alpha + ")"
                     ctx.fill()
                 }
             }
         }
 
         Common.GlowSvgIcon {
+            id: moonIcon
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.rightMargin: 32
             anchors.topMargin: 28
             width: 36
             height: 36
-            rotation: -25
             source: Quickshell.shellDir + "/assets/icons/moon.svg"
             color: theme
                 ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.85)
@@ -283,6 +324,13 @@ Item {
             glowSamples: 24
             glowRadius: 12
             glowSpread: 0.4
+
+            SequentialAnimation on rotation {
+                loops: Animation.Infinite
+                running: moonIcon.visible
+                NumberAnimation { from: -28; to: -22; duration: 4500; easing.type: Easing.InOutSine }
+                NumberAnimation { from: -22; to: -28; duration: 4500; easing.type: Easing.InOutSine }
+            }
         }
 
         RowLayout {
@@ -417,6 +465,7 @@ Item {
                 GridLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    opacity: root.gridOpacity
                     columns: 7
                     rowSpacing: 4
                     columnSpacing: 0
