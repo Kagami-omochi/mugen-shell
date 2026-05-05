@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import "../common" as Common
 
 Item {
     id: root
@@ -196,6 +197,77 @@ Item {
         }
 
         focus: true
+
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0.30, 0.15, 0.45, 0.40) }
+                GradientStop { position: 0.55; color: Qt.rgba(0.15, 0.08, 0.30, 0.20) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.05, 0.03, 0.12, 0.0) }
+            }
+        }
+
+        Canvas {
+            id: starField
+            anchors.fill: parent
+            antialiasing: true
+
+            property var stars: []
+
+            function regenerate() {
+                const list = []
+                const count = 70
+                const ceiling = height * 0.35
+                for (let i = 0; i < count; i++) {
+                    list.push({
+                        x: Math.random() * width,
+                        y: Math.random() * ceiling,
+                        r: 0.4 + Math.random() * 1.4,
+                        a: 0.15 + Math.random() * 0.55
+                    })
+                }
+                stars = list
+                requestPaint()
+            }
+
+            onWidthChanged: regenerate()
+            onHeightChanged: regenerate()
+            Component.onCompleted: regenerate()
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                for (let i = 0; i < stars.length; i++) {
+                    const s = stars[i]
+                    ctx.beginPath()
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+                    ctx.fillStyle = "rgba(245, 240, 255, " + s.a + ")"
+                    ctx.fill()
+                }
+            }
+        }
+
+        Common.GlowSvgIcon {
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.rightMargin: 32
+            anchors.topMargin: 28
+            width: 36
+            height: 36
+            rotation: -25
+            source: Quickshell.shellDir + "/assets/icons/moon.svg"
+            color: theme
+                ? Qt.rgba(theme.textPrimary.r, theme.textPrimary.g, theme.textPrimary.b, 0.85)
+                : Qt.rgba(0.95, 0.93, 0.98, 0.85)
+
+            enableGlow: true
+            glowColor: theme
+                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.45)
+                : Qt.rgba(0.65, 0.55, 0.85, 0.45)
+            glowSamples: 24
+            glowRadius: 12
+            glowSpread: 0.4
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -407,19 +479,19 @@ Item {
 
                             Rectangle {
                                 anchors.centerIn: parent
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: {
-                                    if (isToday) return theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.25) : Qt.rgba(0.65, 0.55, 0.85, 0.25)
-                                    if (isSelected) return Qt.rgba(0.75, 0.75, 0.8, 0.18)
-                                    if (cellHover.containsMouse) return Qt.rgba(1, 1, 1, 0.06)
-                                    return "transparent"
-                                }
-                                border.width: isSelected && !isToday ? 1 : 0
-                                border.color: Qt.rgba(0.75, 0.75, 0.8, 0.5)
+                                width: 30
+                                height: 30
+                                radius: 15
+                                color: cellHover.containsMouse && !isToday && !isSelected
+                                    ? Qt.rgba(1, 1, 1, 0.06)
+                                    : "transparent"
+                                border.width: isToday ? 1.4 : (isSelected ? 1 : 0)
+                                border.color: isToday
+                                    ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                                    : Qt.rgba(0.75, 0.75, 0.8, 0.5)
 
                                 Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on border.color { ColorAnimation { duration: 150 } }
                             }
 
                             Text {
@@ -429,7 +501,7 @@ Item {
                                     if (isToday) return Qt.rgba(0.98, 0.98, 1.0, 1.0)
                                     return theme ? theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.85)
                                 }
-                                opacity: isCurrentMonth ? 1.0 : 0.30
+                                opacity: isCurrentMonth ? 1.0 : 0.45
                                 font.pixelSize: 13
                                 font.weight: isToday || isSelected ? Font.Medium : Font.Light
                                 font.family: "M PLUS 2"
