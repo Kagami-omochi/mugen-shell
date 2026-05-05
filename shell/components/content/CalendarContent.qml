@@ -341,22 +341,6 @@ Item {
                 Layout.preferredHeight: modeManager.scale(360)
                 Layout.alignment: Qt.AlignHCenter
 
-                Rectangle {
-                    id: calendarBackground
-                    anchors.fill: parent
-                    color: theme ? theme.surfaceInsetSubtle : Qt.rgba(0, 0, 0, 0.25)
-                    border.width: 0
-                    radius: modeManager.scale(26)
-
-                    layer.enabled: true
-                    layer.effect: Glow {
-                        samples: 24
-                        radius: modeManager.scale(12)
-                        spread: 0.5
-                        color: theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.20) : Qt.rgba(0.65, 0.55, 0.85, 0.20)
-                        transparentBorder: true
-                    }
-                }
 
                 Item {
                     anchors.right: parent.right
