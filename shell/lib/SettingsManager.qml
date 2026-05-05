@@ -25,7 +25,7 @@ QtObject {
     property string notificationSound: "None"  // filename in assets/sounds/, or "None"
     property string timerSound: "None"  // filename in assets/sounds/, played when a countdown finishes
     property int lockTimerMinutes: 10  // hypridle screen-lock idle timeout in minutes
-    property string dateFormat: "M/d"  // Qt date tokens: d, dd, ddd, dddd, M, MM, MMM, MMMM, yy, yyyy
+    property string dateFormat: "ddd M/d"  // Qt date tokens: d, dd, ddd, dddd, M, MM, MMM, MMMM, yy, yyyy
 
     // Suppress save while we are applying values that just came in from disk
     // (either initial load or an external write detected by the file watcher).

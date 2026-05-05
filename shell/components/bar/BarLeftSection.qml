@@ -119,7 +119,7 @@ RowLayout {
                 modeManager: root.modeManager
                 theme: root.theme
                 typo: root.typo
-                format: root.settingsManager ? root.settingsManager.dateFormat : "M/d"
+                format: root.settingsManager ? root.settingsManager.dateFormat : "ddd M/d"
                 isHovered: dateMouseArea.containsMouse
                 glowColor: timeBlock.glowColor
                 opacity: dateMouseArea.containsMouse ? 1.0 : 0.6

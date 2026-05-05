@@ -8,7 +8,7 @@ Text {
     property var modeManager
     property bool isHovered: false
     property color glowColor: Qt.rgba(0.65, 0.55, 0.85, 0.6)
-    property string format: "M/d"
+    property string format: "ddd M/d"
     property real fontScale: 0.62
 
     property string dateString: ""
@@ -47,12 +47,12 @@ Text {
 
     function update() {
         const now = new Date()
-        const fmt = format && format.length > 0 ? format : "M/d"
+        const fmt = format && format.length > 0 ? format : "ddd M/d"
         let result = ""
         try {
             result = Qt.formatDate(now, fmt)
         } catch (e) {
-            result = Qt.formatDate(now, "M/d")
+            result = Qt.formatDate(now, "ddd M/d")
         }
         dateString = result
     }

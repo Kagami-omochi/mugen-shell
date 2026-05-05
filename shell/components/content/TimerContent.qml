@@ -121,6 +121,39 @@ Item {
         z: 2
         focus: modeManager.isMode("timer")
 
+        opacity: 0
+        visible: opacity > 0.01
+
+        transform: Translate {
+            id: focusScopeTranslate
+            y: focusScope.opacity > 0.5 ? 0 : modeManager.scale(8)
+            Behavior on y { NumberAnimation { duration: 360; easing.type: Easing.OutCubic } }
+        }
+
+        states: [
+            State {
+                name: "visible"
+                when: modeManager.isMode("timer")
+                PropertyChanges { target: focusScope; opacity: 1.0 }
+            }
+        ]
+
+        transitions: [
+            Transition {
+                from: ""
+                to: "visible"
+                SequentialAnimation {
+                    PauseAnimation { duration: 200 }
+                    NumberAnimation { property: "opacity"; duration: 320; easing.type: Easing.OutCubic }
+                }
+            },
+            Transition {
+                from: "visible"
+                to: ""
+                NumberAnimation { property: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+            }
+        ]
+
         Keys.onPressed: (event) => {
             if (modeManager.isMode("timer")) modeManager.bump()
 
@@ -195,6 +228,17 @@ Item {
                     font.weight: Font.Medium
                     font.family: "M PLUS 2"
                     font.letterSpacing: 1.5
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 16
+                        radius: modeManager.scale(5)
+                        spread: 0.30
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.25)
+                            : Qt.rgba(0.65, 0.55, 0.85, 0.25)
+                        transparentBorder: true
+                    }
                 }
 
                 Item { Layout.fillWidth: true }
@@ -215,6 +259,17 @@ Item {
 
                     Behavior on color { ColorAnimation { duration: 150 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                    layer.enabled: inputField.isFocused
+                    layer.effect: Glow {
+                        samples: 20
+                        radius: modeManager.scale(7)
+                        spread: 0.30
+                        color: theme
+                            ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.40)
+                            : Qt.rgba(0.65, 0.55, 0.85, 0.40)
+                        transparentBorder: true
+                    }
 
                     Row {
                         anchors.left: parent.left
@@ -244,23 +299,38 @@ Item {
                             SequentialAnimation on opacity {
                                 loops: Animation.Infinite
                                 running: caret.visible
-                                NumberAnimation { from: 1.0; to: 0.0; duration: 500; easing.type: Easing.InOutQuad }
-                                NumberAnimation { from: 0.0; to: 1.0; duration: 500; easing.type: Easing.InOutQuad }
+                                NumberAnimation { from: 1.0; to: 0.35; duration: 720; easing.type: Easing.InOutSine }
+                                NumberAnimation { from: 0.35; to: 1.0; duration: 720; easing.type: Easing.InOutSine }
                             }
                         }
                     }
 
                     Text {
+                        id: enterHint
                         anchors.right: parent.right
                         anchors.rightMargin: modeManager.scale(10)
                         anchors.verticalCenter: parent.verticalCenter
                         text: "↵"
-                        color: theme ? theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.55)
+                        color: root.hasInput
+                            ? (theme ? theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 1))
+                            : (theme ? theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.55))
                         font.pixelSize: modeManager.scale(12)
                         font.family: "M PLUS 2"
-                        opacity: root.inputBuffer.length > 0 ? 0.85 : 0.4
+                        opacity: root.hasInput ? 0.95 : 0.4
 
+                        Behavior on color { ColorAnimation { duration: 200 } }
                         Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                        layer.enabled: root.hasInput
+                        layer.effect: Glow {
+                            samples: 16
+                            radius: modeManager.scale(6)
+                            spread: 0.4
+                            color: theme
+                                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.60)
+                                : Qt.rgba(0.65, 0.55, 0.85, 0.60)
+                            transparentBorder: true
+                        }
                     }
 
                     MouseArea {
@@ -301,6 +371,19 @@ Item {
 
                         Behavior on color { ColorAnimation { duration: 150 } }
                         Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                        layer.enabled: isSelected || presetHover.containsMouse
+                        layer.effect: Glow {
+                            samples: 20
+                            radius: modeManager.scale(8)
+                            spread: 0.4
+                            color: theme
+                                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, isSelected ? 0.45 : 0.25)
+                                : Qt.rgba(0.65, 0.55, 0.85, isSelected ? 0.45 : 0.25)
+                            transparentBorder: true
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
 
                         Text {
                             anchors.centerIn: parent
@@ -382,6 +465,19 @@ Item {
                             ctx.stroke()
                         }
                     }
+
+                    layer.enabled: true
+                    layer.effect: Glow {
+                        samples: 24
+                        radius: modeManager.scale(10)
+                        spread: 0.35
+                        color: timerManager && timerManager.paused
+                            ? Qt.rgba(0.72, 0.72, 0.82, 0.30)
+                            : (theme ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                        transparentBorder: true
+
+                        Behavior on color { ColorAnimation { duration: 300 } }
+                    }
                 }
 
                 Column {
@@ -396,6 +492,19 @@ Item {
                         font.weight: Font.Light
                         font.family: "M PLUS 2"
                         font.letterSpacing: 1
+
+                        layer.enabled: true
+                        layer.effect: Glow {
+                            samples: 20
+                            radius: modeManager.scale(7)
+                            spread: 0.35
+                            color: theme
+                                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, timerManager && timerManager.paused ? 0.20 : 0.45)
+                                : Qt.rgba(0.65, 0.55, 0.85, 0.45)
+                            transparentBorder: true
+
+                            Behavior on color { ColorAnimation { duration: 300 } }
+                        }
                     }
 
                     Text {
@@ -434,6 +543,20 @@ Item {
                         border.width: 0
 
                         Behavior on color { ColorAnimation { duration: 150 } }
+
+                        layer.enabled: true
+                        layer.effect: Glow {
+                            samples: 24
+                            radius: modeManager.scale(pauseHover.containsMouse ? 12 : 6)
+                            spread: 0.35
+                            color: theme
+                                ? Qt.rgba(theme.glowPrimary.r, theme.glowPrimary.g, theme.glowPrimary.b, pauseHover.containsMouse ? 0.55 : 0.30)
+                                : Qt.rgba(0.65, 0.55, 0.85, pauseHover.containsMouse ? 0.55 : 0.30)
+                            transparentBorder: true
+
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                            Behavior on radius { NumberAnimation { duration: 200 } }
+                        }
 
                         Text {
                             anchors.centerIn: parent

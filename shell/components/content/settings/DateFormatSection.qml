@@ -20,7 +20,7 @@ Rectangle {
     }
 
     function formatPreview(fmt) {
-        const safe = fmt && fmt.length > 0 ? fmt : "M/d"
+        const safe = fmt && fmt.length > 0 ? fmt : "ddd M/d"
         try {
             return Qt.formatDate(new Date(), safe)
         } catch (e) {
@@ -30,7 +30,7 @@ Rectangle {
 
     function commit() {
         if (!section.settingsManager) return
-        const fmt = formatInput.text.length > 0 ? formatInput.text : "M/d"
+        const fmt = formatInput.text.length > 0 ? formatInput.text : "ddd M/d"
         if (section.settingsManager.dateFormat !== fmt) {
             section.settingsManager.dateFormat = fmt
             section.settingsManager.saveSettings()
@@ -81,7 +81,7 @@ Rectangle {
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8
-                    text: section.settingsManager ? section.settingsManager.dateFormat : "M/d"
+                    text: section.settingsManager ? section.settingsManager.dateFormat : "ddd M/d"
                     color: section.theme ? section.theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.9)
                     selectionColor: section.theme ? Qt.rgba(section.theme.glowPrimary.r, section.theme.glowPrimary.g, section.theme.glowPrimary.b, 0.4) : Qt.rgba(0.65, 0.55, 0.85, 0.4)
                     font.pixelSize: 12
