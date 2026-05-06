@@ -228,79 +228,6 @@ PanelWindow {
 
     Managers.MicCavaManager { id: micCavaManager }
 
-    property int previousVolume: audioManager.volume
-    property bool previousMuted: audioManager.isMuted
-    property bool isInitialized: false
-
-    // Defer the auto-open auto-detection until audio events settle. PipeWire
-    // / pactl-subscribe fire several volume + mute changes during bootup as
-    // sinks register, default-sink swaps, and Bluetooth headphones connect.
-    // Without this, the bar would pop open the volume panel right after login.
-    Timer {
-        id: settleTimer
-        interval: 2000
-        running: false
-        repeat: false
-        onTriggered: {
-            previousVolume = audioManager.volume
-            previousMuted = audioManager.isMuted
-            isInitialized = true
-        }
-    }
-
-    // Hard cap so isInitialized eventually flips even if pactl never quiets.
-    Timer {
-        id: settleHardCap
-        interval: 10000
-        running: false
-        repeat: false
-        onTriggered: {
-            if (!isInitialized) {
-                previousVolume = audioManager.volume
-                previousMuted = audioManager.isMuted
-                isInitialized = true
-            }
-        }
-    }
-
-    Connections {
-        target: audioManager
-
-        function onVolumeChanged() {
-            if (!isInitialized) {
-                previousVolume = audioManager.volume
-                settleTimer.restart()
-                return
-            }
-
-            if (audioManager.volume !== previousVolume) {
-                if (!modeManager.isMode("volume")) {
-                    // viaIpc=true so the bar's requestActivate path fires and
-                    // the panel receives keyboard focus (ESC works on open).
-                    modeManager.switchMode("volume", true)
-                }
-                previousVolume = audioManager.volume
-            }
-        }
-
-        function onIsMutedChanged() {
-            if (!isInitialized) {
-                previousMuted = audioManager.isMuted
-                settleTimer.restart()
-                return
-            }
-
-            if (audioManager.isMuted !== previousMuted) {
-                if (!modeManager.isMode("volume")) {
-                    // viaIpc=true so the bar's requestActivate path fires and
-                    // the panel receives keyboard focus (ESC works on open).
-                    modeManager.switchMode("volume", true)
-                }
-                previousMuted = audioManager.isMuted
-            }
-        }
-    }
-
     Managers.ImeStatus {
         id: imeStatus
         theme: theme
@@ -777,7 +704,5 @@ PanelWindow {
 
     Component.onCompleted: {
         modeManager.listModes()
-        settleTimer.start()
-        settleHardCap.start()
     }
 }
