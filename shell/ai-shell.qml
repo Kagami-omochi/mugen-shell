@@ -43,11 +43,10 @@ ShellRoot {
         height: 540
         minimumSize: Qt.size(640, 480)
 
-        Rectangle {
+        Item {
             anchors.fill: parent
-            color: Qt.rgba(0.04, 0.03, 0.08, 0.92)
-
             focus: true
+
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Escape) {
                     Qt.quit()
@@ -55,12 +54,11 @@ ShellRoot {
                 }
             }
 
-            Content.AiAssistantContent {
+            Content.AiAssistantFloatingContent {
                 anchors.fill: parent
                 modeManager: modeStub
                 theme: themeColors
                 icons: icons
-                isStandalone: true
             }
         }
     }
