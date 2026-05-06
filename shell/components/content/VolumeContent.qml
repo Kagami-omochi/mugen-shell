@@ -85,6 +85,7 @@ Item {
             } else {
                 root.updateMicCavaState()
                 focusTimer.restart()
+                volumeChangeTimer.restart()
             }
         }
     }

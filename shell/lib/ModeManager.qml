@@ -124,8 +124,12 @@ QtObject {
         
         stdout: SplitParser {
             onRead: data => {
+                // SplitParser drops the trailing newline; preserve it so
+                // multi-line IPC payloads don't get concatenated when the
+                // file has several queued commands ("open volume" +
+                // "open volume" → "open volumeopen volume" otherwise).
                 if (data) {
-                    ipcReader.output += data
+                    ipcReader.output += data + "\n"
                 }
             }
         }
@@ -225,23 +229,34 @@ QtObject {
             }
             switchMode(modeName, true)
         }
-        
+
+        // "open" is non-toggling: stay open if already in that mode. Used by
+        // volume keys etc. so repeated key presses don't close the panel.
+        function safeOpen(modeName) {
+            if (!modeName || modeName.length === 0) return
+            if (modeName === "normal") {
+                closeAllModes()
+                return
+            }
+            if (!known[modeName]) {
+                console.warn("Unknown mode from IPC:", modeName)
+                closeAllModes()
+                return
+            }
+            if (isMode(modeName)) return
+            switchMode(modeName, true)
+        }
+
         switch(cmd) {
             case "open":
+                if (parts.length > 1) safeOpen(parts[1])
+                break
             case "switch":
-                if (parts.length > 1) {
-                    let modeName = parts[1]
-                    safeSwitch(modeName)
-                }
+            case "toggle":
+                if (parts.length > 1) safeSwitch(parts[1])
                 break
             case "close":
                 closeAllModes()
-                break
-            case "toggle":
-                if (parts.length > 1) {
-                    let modeName = parts[1]
-                    safeSwitch(modeName)
-                }
                 break
             default:
                 safeSwitch(cmd)
