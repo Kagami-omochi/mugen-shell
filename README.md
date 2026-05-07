@@ -77,7 +77,7 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 - Screenshot capture with clipboard copy (`Super + F12`)
 - Screenshot gallery
 - Power menu
-- In-shell settings panel with configurable notification + timer sounds, theme, blur, animations, lock-timer, and date format
+- In-shell settings panel with configurable notification + timer sounds, theme, blur, animations, lock-timer, date format, and bar AI model
 
 ---
 
