@@ -37,14 +37,12 @@ AI chat panel (`Super + A` for the bar version, `Super + Shift + A` for a dedica
 
 Built and enabled automatically on either install path (Nix flake or `make install` — see [SETUP.md](SETUP.md)).
 
-- Streaming SSE responses with stop button
-- Runtime model switching from the UI
-- Dedicated floating window with a dream-styled UI (cosmic gradient, drifting particles, ambient orb that travels from the centre to follow the latest AI reply)
-- Welcome screen with suggestion chips
-- Multiline input (Shift + Enter)
-- Copy button per message
-- Smart auto-scroll
-- BlobEffect breathing indicator
+- Spotlight-style one-row prompt in the bar — orb + input pill, response streams into the placeholder, navigable read-only after streaming, orb click detaches into the floating window
+- Floating window with a dream-styled UI (cosmic gradient, drifting particles, ambient orb that travels from the centre to follow the latest reply) and a collapsible sidebar of past conversations
+- SQLite-persisted multi-conversation history (`~/.local/state/mugen-ai/history.db`) — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you actually send something
+- Per-conversation model binding — each chat stays on the provider it was started with; the float dropdown locks to read-only mid-conversation, and a Settings entry pins the bar AI's model
+- Markdown rendering for assistant replies, with monospace code blocks that have their own hover-reveal copy button
+- Streaming SSE responses with stop button, BlobEffect breathing indicator, IME-aware placeholder
 - Configurable personality and real-time context injection (date/time, weather)
 
 Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → Configuring mugen-ai](SETUP.md#configuring-mugen-ai).

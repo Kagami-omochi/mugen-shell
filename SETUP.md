@@ -156,7 +156,7 @@ yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
 
 ## Configuring mugen-ai
 
-The AI panel (`Super + A`) talks to a local Go server. Settings → AI Assistant has "Edit Config" / "Restart AI" buttons that open `~/.config/mugen-ai/config.toml` in your default editor and bounce the systemd unit, so you don't have to drop to a terminal for tweaks. When `mugen-ai.service` isn't running, the panel shows an install hint instead of the chat UI — safe to leave the bar icon if you skip this feature.
+The AI panel (`Super + A`) talks to a local Go server. Settings → AI Assistant has "Edit Config" / "Restart AI" buttons that open `~/.config/mugen-ai/config.toml` in your default editor and bounce the systemd unit, so you don't have to drop to a terminal for tweaks. The neighbouring "Bar AI model" dropdown pins which model the bar `Super + A` panel uses — leave it on "Default (last used in float)" to follow whichever model the floating window most recently selected. When `mugen-ai.service` isn't running, the panel shows an install hint instead of the chat UI — safe to leave the bar icon if you skip this feature.
 
 `~/.config/mugen-ai/config.toml`:
 
@@ -185,15 +185,20 @@ systemctl --user restart mugen-ai.service
 
 ### HTTP API
 
-`mugen-ai serve` runs on `:11435`. The shell talks to it over plain HTTP:
+`mugen-ai serve` runs on `:11435`. The shell talks to it over plain HTTP. Conversations and messages are persisted in SQLite at `~/.local/state/mugen-ai/history.db`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/chat` | Send a message, receive SSE stream |
-| DELETE | `/history` | Clear conversation history |
+| POST | `/chat` | Send a message, receive SSE stream. Body: `{message, conversation_id, model}` — `conversation_id: 0` auto-creates a new conversation, `>0` appends to that one. The first SSE event is `{conversation_id, model}` so the client can sync state. The model bound to a conversation always wins; the request's `model` field only seeds the model on a brand-new conversation. |
 | GET | `/health` | Server status and active model |
 | GET | `/models` | List available models |
-| PUT | `/model` | Switch the active model (`{"model": "name"}`) |
+| PUT | `/model` | Set the default model for the *next* new conversation (`{"model": "name"}`). Existing conversations keep their bound model. |
+| GET | `/conversations` | List every conversation (id, title, model, timestamps) |
+| GET | `/conversations/current` | Current conversation with its messages |
+| GET | `/conversations/{id}` | A specific conversation with its messages |
+| POST | `/conversations` | Create an empty conversation explicitly |
+| POST | `/conversations/{id}/select` | Make a conversation current |
+| DELETE | `/conversations/{id}` | Delete a conversation |
 
 For terminal use: `mugen-ai chat`.
 
