@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/server"
 	"github.com/tmy7533018/mugen-ai/internal/state"
+	"github.com/tmy7533018/mugen-ai/internal/store"
 )
 
 var serveCmd = &cobra.Command{
@@ -61,9 +63,18 @@ func runServe(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	hist := history.New(system)
+	st, err := store.Open(historyDBPath())
+	if err != nil {
+		return fmt.Errorf("open history store: %w", err)
+	}
+	defer st.Close()
+
+	hist, err := history.New(st, system)
+	if err != nil {
+		return fmt.Errorf("init history: %w", err)
+	}
 	hist.ContextFunc = func() string { return ctxinfo.Build(cfg.Context) }
-	srv := server.New(registry, hist)
+	srv := server.New(registry, hist, st)
 
 	addr := fmt.Sprintf("127.0.0.1:%d", servePort)
 	httpSrv := &http.Server{Addr: addr, Handler: srv.Routes()}
@@ -86,6 +97,15 @@ func runServe(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return httpSrv.Shutdown(ctx)
+}
+
+func historyDBPath() string {
+	d := os.Getenv("XDG_STATE_HOME")
+	if d == "" {
+		home, _ := os.UserHomeDir()
+		d = filepath.Join(home, ".local", "state")
+	}
+	return filepath.Join(d, "mugen-ai", "history.db")
 }
 
 func buildRegistry(cfg config.Config, model string) *provider.Registry {

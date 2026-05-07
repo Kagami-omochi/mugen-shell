@@ -13,6 +13,7 @@ import (
 	"github.com/tmy7533018/mugen-ai/internal/history"
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/state"
+	"github.com/tmy7533018/mugen-ai/internal/store"
 )
 
 var chatCmd = &cobra.Command{
@@ -56,11 +57,20 @@ func runChat(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	hist := history.New(system)
+	st, err := store.Open(historyDBPath())
+	if err != nil {
+		return fmt.Errorf("open history store: %w", err)
+	}
+	defer st.Close()
+
+	hist, err := history.New(st, system)
+	if err != nil {
+		return fmt.Errorf("init history: %w", err)
+	}
 	hist.ContextFunc = func() string { return ctxinfo.Build(cfg.Context) }
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fmt.Printf("Chat with %s  (commands: exit, clear)\n\n", model)
+	fmt.Printf("Chat with %s  (commands: exit, new)\n\n", model)
 
 	for {
 		fmt.Print("> ")
@@ -74,13 +84,19 @@ func runChat(_ *cobra.Command, _ []string) error {
 		switch input {
 		case "exit":
 			return nil
-		case "clear":
-			hist.Clear()
-			fmt.Println("History cleared.")
+		case "new", "clear":
+			if _, err := hist.NewConversation(); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			} else {
+				fmt.Println("Started a new conversation.")
+			}
 			continue
 		}
 
-		hist.Add("user", input)
+		if err := hist.Add("user", input); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			continue
+		}
 
 		var fullResponse string
 		err := registry.Chat(context.Background(), hist.Messages(), func(chunk provider.ChatChunk) error {
@@ -92,11 +108,11 @@ func runChat(_ *cobra.Command, _ []string) error {
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			hist.Clear()
+			hist.RemoveLast()
 			continue
 		}
 
-		hist.Add("assistant", fullResponse)
+		_ = hist.Add("assistant", fullResponse)
 	}
 
 	return nil

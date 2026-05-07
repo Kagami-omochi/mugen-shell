@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/tmy7533018/mugen-ai/internal/history"
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/state"
+	"github.com/tmy7533018/mugen-ai/internal/store"
 )
 
 const maxRequestBody = 64 * 1024 // 64KB
@@ -15,19 +17,27 @@ const maxRequestBody = 64 * 1024 // 64KB
 type Server struct {
 	registry *provider.Registry
 	history  *history.History
+	store    *store.Store
 }
 
-func New(registry *provider.Registry, hist *history.History) *Server {
-	return &Server{registry: registry, history: hist}
+func New(registry *provider.Registry, hist *history.History, st *store.Store) *Server {
+	return &Server{registry: registry, history: hist, store: st}
 }
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /chat", s.handleChat)
-	mux.HandleFunc("DELETE /history", s.handleClearHistory)
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /models", s.handleModels)
 	mux.HandleFunc("PUT /model", s.handleSwitchModel)
+
+	mux.HandleFunc("GET /conversations", s.handleListConversations)
+	mux.HandleFunc("POST /conversations", s.handleCreateConversation)
+	mux.HandleFunc("GET /conversations/current", s.handleCurrentConversation)
+	mux.HandleFunc("GET /conversations/{id}", s.handleGetConversation)
+	mux.HandleFunc("DELETE /conversations/{id}", s.handleDeleteConversation)
+	mux.HandleFunc("POST /conversations/{id}/select", s.handleSelectConversation)
+
 	return corsMiddleware(mux)
 }
 
@@ -45,7 +55,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 type chatRequest struct {
-	Message string `json:"message"`
+	Message        string `json:"message"`
+	ConversationID int64  `json:"conversation_id"`
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +68,19 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.history.Add("user", req.Message)
+	// Each chat request specifies its target conversation explicitly:
+	// 0 means "start a new one" (Add will auto-create), >0 routes the message
+	// into that conversation. This keeps two open windows from racing on a
+	// shared "current" pointer.
+	if err := s.history.Switch(req.ConversationID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.history.Add("user", req.Message); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -68,6 +91,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "streaming not supported", http.StatusInternalServerError)
 		return
 	}
+
+	// Send the conversation id up-front so the client can sync state without a
+	// separate /conversations/current round-trip — eliminates a race where
+	// rapid follow-up messages would create another fresh conversation.
+	idData, _ := json.Marshal(map[string]any{"conversation_id": s.history.ConvID()})
+	fmt.Fprintf(w, "data: %s\n\n", idData)
+	flusher.Flush()
 
 	var fullResponse string
 
@@ -91,13 +121,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fullResponse != "" {
-		s.history.Add("assistant", fullResponse)
+		_ = s.history.Add("assistant", fullResponse)
 	}
-}
-
-func (s *Server) handleClearHistory(w http.ResponseWriter, _ *http.Request) {
-	s.history.Clear()
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
@@ -106,8 +131,7 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"models": models})
+	writeJSON(w, map[string]any{"models": models})
 }
 
 type switchModelRequest struct {
@@ -124,11 +148,13 @@ func (s *Server) handleSwitchModel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.registry.SetModel(req.Model)
-	s.history.Clear()
+	if _, err := s.history.NewConversation(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	_ = state.SaveModel(req.Model)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"model": req.Model})
+	writeJSON(w, map[string]string{"model": req.Model})
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -140,10 +166,134 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		status = "provider_unavailable"
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	writeJSON(w, map[string]any{
 		"status": status,
 		"model":  model,
 	})
 }
 
+func (s *Server) handleListConversations(w http.ResponseWriter, _ *http.Request) {
+	convs, err := s.store.ListConversations()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if convs == nil {
+		convs = []store.Conversation{}
+	}
+	writeJSON(w, map[string]any{"conversations": convs})
+}
+
+func (s *Server) handleCreateConversation(w http.ResponseWriter, _ *http.Request) {
+	id, err := s.history.NewConversation()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	conv, _ := s.store.GetConversation(id)
+	writeJSON(w, conv)
+}
+
+func (s *Server) handleCurrentConversation(w http.ResponseWriter, _ *http.Request) {
+	id := s.history.ConvID()
+	if id == 0 {
+		writeJSON(w, map[string]any{"id": 0, "messages": []any{}})
+		return
+	}
+	conv, err := s.store.GetConversation(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if conv == nil {
+		writeJSON(w, map[string]any{"id": 0, "messages": []any{}})
+		return
+	}
+	msgs, err := s.store.ListMessages(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if msgs == nil {
+		msgs = []store.Message{}
+	}
+	writeJSON(w, map[string]any{
+		"id":         conv.ID,
+		"title":      conv.Title,
+		"created_at": conv.CreatedAt,
+		"updated_at": conv.UpdatedAt,
+		"messages":   msgs,
+	})
+}
+
+func (s *Server) handleGetConversation(w http.ResponseWriter, r *http.Request) {
+	id, ok := parsePathID(r, "id")
+	if !ok {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	conv, err := s.store.GetConversation(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if conv == nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	msgs, err := s.store.ListMessages(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if msgs == nil {
+		msgs = []store.Message{}
+	}
+	writeJSON(w, map[string]any{
+		"id":         conv.ID,
+		"title":      conv.Title,
+		"created_at": conv.CreatedAt,
+		"updated_at": conv.UpdatedAt,
+		"messages":   msgs,
+	})
+}
+
+func (s *Server) handleDeleteConversation(w http.ResponseWriter, r *http.Request) {
+	id, ok := parsePathID(r, "id")
+	if !ok {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	if err := s.history.DeleteConversation(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{"current_id": s.history.ConvID()})
+}
+
+func (s *Server) handleSelectConversation(w http.ResponseWriter, r *http.Request) {
+	id, ok := parsePathID(r, "id")
+	if !ok {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	if err := s.history.Switch(id); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, map[string]any{"id": id})
+}
+
+func parsePathID(r *http.Request, name string) (int64, bool) {
+	raw := r.PathValue(name)
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, false
+	}
+	return id, true
+}
+
+func writeJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(v)
+}
