@@ -26,6 +26,7 @@ QtObject {
     property string timerSound: "None"  // filename in assets/sounds/, played when a countdown finishes
     property int lockTimerMinutes: 10  // hypridle screen-lock idle timeout in minutes
     property string dateFormat: "ddd M/d"  // Qt date tokens: d, dd, ddd, dddd, M, MM, MMM, MMMM, yy, yyyy
+    property string barAiModel: ""  // "" = follow the backend default (last model selected in float)
 
     // Suppress save while we are applying values that just came in from disk
     // (either initial load or an external write detected by the file watcher).
@@ -70,6 +71,9 @@ QtObject {
             },
             "date": {
                 "format": dateFormat
+            },
+            "ai": {
+                "barModel": barAiModel
             }
         }
 
@@ -148,6 +152,12 @@ QtObject {
             if (settings.date) {
                 if (settings.date.format !== undefined) {
                     dateFormat = settings.date.format
+                }
+            }
+
+            if (settings.ai) {
+                if (settings.ai.barModel !== undefined) {
+                    barAiModel = settings.ai.barModel
                 }
             }
 

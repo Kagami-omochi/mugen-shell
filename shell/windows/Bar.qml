@@ -498,6 +498,7 @@ PanelWindow {
         property var modeManagerRef: modeManager
         property var themeRef: theme
         property var iconsRef: icons
+        property var settingsManagerRef: settingsManager
 
         // Keep AI loaded after first open so chat history, streaming state,
         // and model selection survive panel close/reopen. Other modules
@@ -512,6 +513,7 @@ PanelWindow {
             modeManager: aiAssistantLoader.modeManagerRef
             theme: aiAssistantLoader.themeRef
             icons: aiAssistantLoader.iconsRef
+            settingsManager: aiAssistantLoader.settingsManagerRef
         }
     }
 

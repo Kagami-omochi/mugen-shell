@@ -23,5 +23,8 @@
   },
   "date": {
     "format": "ddd M/d"
+  },
+  "ai": {
+    "barModel": ""
   }
 }

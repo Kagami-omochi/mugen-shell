@@ -14,6 +14,7 @@ FocusScope {
     required property var modeManager
     property var theme
     property var icons
+    property var settingsManager
     property bool isStandalone: false
 
     // Spotlight-style: keep the bar at its normal height, just give the AI mode
@@ -65,9 +66,14 @@ FocusScope {
         responseDisplay = ""
         displayingResponse = false
         streaming = true
+        // Bar AI's model is whatever Settings → "Bar AI model" picked. An
+        // empty string means "follow the backend default" — the server falls
+        // back to the registry global in that case.
+        let modelChoice = (settingsManager && settingsManager.barAiModel) ? settingsManager.barAiModel : ""
         chatProcess.payload = JSON.stringify({
             message: text,
-            conversation_id: currentConvId
+            conversation_id: currentConvId,
+            model: modelChoice
         })
         chatProcess.running = true
     }

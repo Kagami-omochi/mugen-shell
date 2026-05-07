@@ -127,6 +127,7 @@ Item {
                             case "timerSound":        return timerSoundSection
                             case "lockTimer":         return lockTimerSection
                             case "dateFormat":        return dateFormatSection
+                            case "aiBarModel":        return aiBarModelSection
                             case "shortcuts":         return shortcutsSection
                             default:                  return null
                         }
@@ -144,6 +145,7 @@ Item {
                     settingsModel.append({ "type": "timerSound" })
                     settingsModel.append({ "type": "lockTimer" })
                     settingsModel.append({ "type": "dateFormat" })
+                    settingsModel.append({ "type": "aiBarModel" })
                     settingsModel.append({ "type": "shortcuts" })
                 }
             }
@@ -204,6 +206,11 @@ Item {
         settingsManager: root.settingsManager
     }}
     Component { id: dateFormatSection; Settings.DateFormatSection {
+        theme: root.theme
+        modeManager: root.modeManager
+        settingsManager: root.settingsManager
+    }}
+    Component { id: aiBarModelSection; Settings.AiBarModelSection {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager

@@ -469,6 +469,7 @@ Item {
                             case "lockTimer": return lockTimerSection
                             case "dateFormat": return dateFormatSection
                             case "aiConfig": return aiConfigSection
+                            case "aiBarModel": return aiBarModelSection
                             case "keyboardShortcuts": return keyboardShortcutsSection
                             default: return null
                         }
@@ -487,6 +488,7 @@ Item {
                     settingsModel.append({ "type": "lockTimer" })
                     settingsModel.append({ "type": "dateFormat" })
                     settingsModel.append({ "type": "aiConfig" })
+                    settingsModel.append({ "type": "aiBarModel" })
                     settingsModel.append({ "type": "keyboardShortcuts" })
                 }
             }
@@ -598,6 +600,15 @@ Item {
             modeManager: root.modeManager
             onEditConfig: root.openAiConfig()
             onRestartService: root.restartAi()
+        }
+    }
+
+    Component {
+        id: aiBarModelSection
+        Settings.AiBarModelSection {
+            theme: root.theme
+            modeManager: root.modeManager
+            settingsManager: root.settingsManager
         }
     }
 
