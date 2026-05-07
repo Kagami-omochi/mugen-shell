@@ -31,7 +31,7 @@ For directory layout, install paths (Nix flake home-manager module or manual `ma
 
 ## AI Assistant
 
-https://github.com/user-attachments/assets/6cd18b39-5ec2-4c23-8c08-95fd2457db64
+https://github.com/user-attachments/assets/e9fef972-9445-4ec4-a08e-2d1ae98c8a11
 
 AI chat panel (`Super + A` for the bar version, `Super + Shift + A` for a dedicated floating window) powered by **mugen-ai** — a Go server bundled in this repo under [`ai/`](ai/), supporting local [Ollama](https://ollama.com) models and Google Gemini.
 
