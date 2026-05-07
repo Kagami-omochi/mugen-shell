@@ -21,6 +21,10 @@ FocusScope {
     property bool healthChecked: false
     property bool userScrolled: false
     property string currentModel: ""
+    // The model the *next* new conversation will start with — i.e. the
+    // backend registry default. Tracked separately so opening an old chat
+    // can show its bound model without clobbering this preference.
+    property string defaultModel: ""
     property var availableModels: []
     property bool modelDropdownOpen: false
 
@@ -60,7 +64,8 @@ FocusScope {
         userScrolled = false
         chatProcess.payload = JSON.stringify({
             message: text,
-            conversation_id: currentConvId
+            conversation_id: currentConvId,
+            model: currentModel
         })
         chatProcess.running = true
     }
@@ -76,6 +81,10 @@ FocusScope {
         messages = []
         currentConvId = 0
         userScrolled = false
+        // Coming back from an old conversation may have left currentModel
+        // stuck on that conversation's bound model — restore it to the
+        // backend default so the dropdown shows what the next chat will use.
+        if (defaultModel !== "") currentModel = defaultModel
         // No backend call — the conversation is auto-created on first user message,
         // so abandoning a blank "New chat" leaves no empty row in the store.
     }
@@ -322,12 +331,19 @@ FocusScope {
             currentModel: root.currentModel
             availableModels: root.availableModels
             isOpen: root.modelDropdownOpen
+            // The selector only edits the *next* conversation's default model.
+            // While a chat is active, it shows that chat's bound model
+            // read-only so the user can't accidentally switch mid-stream.
+            editable: root.currentConvId === 0
 
-            onToggled: root.modelDropdownOpen = !root.modelDropdownOpen
+            onToggled: {
+                if (!editable) return
+                root.modelDropdownOpen = !root.modelDropdownOpen
+            }
             onModelChosen: name => {
                 if (name !== root.currentModel) {
-                    if (root.streaming) root.stopStreaming()
                     root.currentModel = name
+                    root.defaultModel = name
                     switchModelProcess.payload = JSON.stringify({ model: name })
                     switchModelProcess.running = true
                 }
@@ -767,6 +783,7 @@ FocusScope {
                     let obj = JSON.parse(jsonStr)
                     if (obj.conversation_id !== undefined) {
                         root.currentConvId = obj.conversation_id
+                        if (obj.model) root.currentModel = obj.model
                         return
                     }
                     if (obj.error) {
@@ -826,6 +843,11 @@ FocusScope {
                 root.currentConvId = obj.id || 0
                 let msgs = obj.messages || []
                 root.messages = msgs.map(m => ({ role: m.role, content: m.content }))
+                // Sync the dropdown to the conversation's bound model so the
+                // selector reflects what's actually being used.
+                if (root.currentConvId !== 0 && obj.model) {
+                    root.currentModel = obj.model
+                }
             } catch (e) {}
         }
     }
@@ -903,6 +925,7 @@ FocusScope {
                 try {
                     let obj = JSON.parse(buf)
                     root.currentModel = obj.model || ""
+                    root.defaultModel = obj.model || ""
                     root.hasModel = obj.status === "ok"
                 } catch (e) {}
                 modelsProcess.running = true
@@ -944,14 +967,9 @@ FocusScope {
                   "-H", "Content-Type: application/json",
                   "-d", payload]
 
-        onExited: (exitCode) => {
-            if (exitCode === 0) {
-                root.messages = []
-                // Backend creates a fresh conversation when the model is switched.
-                root.currentConvId = 0
-                root.refreshConversations()
-            }
-        }
+        // PUT /model now only changes the *default* model for the next new
+        // conversation. The current view stays on whatever it was — no
+        // history wipe, no surprise empty-conversation row in the sidebar.
     }
 
     Component.onCompleted: {

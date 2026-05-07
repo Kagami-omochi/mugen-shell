@@ -9,6 +9,10 @@ Item {
     required property string currentModel
     required property var availableModels
     property bool isOpen: false
+    // When false the selector renders as a read-only label of the current
+    // model — no dropdown, no hover chip — so a chat that's already bound to
+    // a model can't accidentally be switched mid-conversation.
+    property bool editable: true
 
     signal toggled()
     signal modelChosen(string name)
@@ -20,24 +24,31 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: modelSelectorMouse.containsMouse
+        color: selector.editable && modelSelectorMouse.containsMouse
             ? (selector.theme ? selector.theme.chipActiveBg : Qt.rgba(0.45, 0.45, 0.60, 0.25))
             : (selector.theme ? selector.theme.chipInactiveBg : Qt.rgba(0.45, 0.45, 0.60, 0.12))
         border.color: selector.theme ? selector.theme.chipInactiveBorder : Qt.rgba(0.55, 0.55, 0.68, 0.15)
         border.width: 1
+        opacity: selector.editable ? 1.0 : 0.6
 
         Behavior on color {
             ColorAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
+        Behavior on opacity { NumberAnimation { duration: 200 } }
 
         Text {
             id: modelLabel
             anchors.centerIn: parent
-            text: selector.currentModel + (selector.isOpen ? "  ▴" : "  ▾")
+            text: selector.editable
+                ? selector.currentModel + (selector.isOpen ? "  ▴" : "  ▾")
+                : selector.currentModel
             color: selector.theme ? selector.theme.textPrimary : Qt.rgba(0.92, 0.92, 0.96, 0.90)
             font.pixelSize: selector.modeManager ? selector.modeManager.scale(11) : 11
             font.family: "M PLUS 2"
-            opacity: modelSelectorMouse.containsMouse ? 1.0 : 0.7
+            font.italic: !selector.editable
+            opacity: selector.editable
+                ? (modelSelectorMouse.containsMouse ? 1.0 : 0.7)
+                : 0.85
 
             Behavior on opacity {
                 NumberAnimation { duration: 200 }
@@ -47,8 +58,9 @@ Item {
         MouseArea {
             id: modelSelectorMouse
             anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: selector.editable
+            cursorShape: selector.editable ? Qt.PointingHandCursor : Qt.ArrowCursor
+            enabled: selector.editable
             onClicked: selector.toggled()
         }
     }
