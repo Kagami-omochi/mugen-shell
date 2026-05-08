@@ -196,9 +196,18 @@ chmod 600 ~/.config/mugen-ai/.env
 systemctl --user restart mugen-ai.service
 ```
 
+### Listen address
+
+`mugen-ai serve --port 11436` switches the listen port for that invocation. To make it sticky for the systemd unit, set `MUGEN_AI_PORT` (and optionally `MUGEN_AI_HOST`, default `127.0.0.1`) in `~/.config/mugen-ai/.env` — the same env vars are read by the shell client (`shell/lib/AiBackend.qml`) so the bar / floating panels stay in sync.
+
+```sh
+echo 'MUGEN_AI_PORT=11436' >> ~/.config/mugen-ai/.env
+systemctl --user restart mugen-ai.service
+```
+
 ### HTTP API
 
-`mugen-ai serve` runs on `:11435`. The shell talks to it over plain HTTP. Conversations and messages are persisted in SQLite at `~/.local/state/mugen-ai/history.db`.
+`mugen-ai serve` listens on `127.0.0.1:11435` by default. The shell talks to it over plain HTTP. Conversations and messages are persisted in SQLite at `~/.local/state/mugen-ai/history.db`.
 
 | Method | Path | Description |
 |--------|------|-------------|
