@@ -6,18 +6,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmy7533018/mugen-ai/internal/config"
-	ctxinfo "github.com/tmy7533018/mugen-ai/internal/context"
-	"github.com/tmy7533018/mugen-ai/internal/history"
-	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/server"
-	"github.com/tmy7533018/mugen-ai/internal/state"
-	"github.com/tmy7533018/mugen-ai/internal/store"
 )
 
 var serveCmd = &cobra.Command{
@@ -40,41 +33,13 @@ func init() {
 }
 
 func runServe(_ *cobra.Command, _ []string) error {
-	cfg, err := config.Load()
+	rt, err := loadRuntimeContext(serveModel, serveSystem)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: config load failed, using defaults: %v\n", err)
-		cfg = config.Default()
+		return err
 	}
+	defer rt.Store.Close()
 
-	model := serveModel
-	if model == "" {
-		model = state.LoadModel()
-	}
-	system := serveSystem
-	if system == "" {
-		system = cfg.Personality.SystemPrompt
-	}
-
-	registry := buildRegistry(cfg, model)
-	if model == "" {
-		if models, _ := registry.Models(context.Background()); len(models) > 0 {
-			model = models[0]
-			registry.SetModel(model)
-		}
-	}
-
-	st, err := store.Open(historyDBPath())
-	if err != nil {
-		return fmt.Errorf("open history store: %w", err)
-	}
-	defer st.Close()
-
-	hist, err := history.New(st, system)
-	if err != nil {
-		return fmt.Errorf("init history: %w", err)
-	}
-	hist.ContextFunc = func() string { return ctxinfo.Build(cfg.Context) }
-	srv := server.New(registry, hist, st)
+	srv := server.New(rt.Registry, rt.History, rt.Store)
 
 	addr := fmt.Sprintf("127.0.0.1:%d", servePort)
 	httpSrv := &http.Server{Addr: addr, Handler: srv.Routes()}
@@ -82,7 +47,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 	done := make(chan error, 1)
 	go func() { done <- httpSrv.ListenAndServe() }()
 
-	fmt.Fprintf(os.Stdout, "mugen-ai listening on %s (model: %s)\n", addr, model)
+	fmt.Fprintf(os.Stdout, "mugen-ai listening on %s (model: %s)\n", addr, rt.Model)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -97,29 +62,4 @@ func runServe(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return httpSrv.Shutdown(ctx)
-}
-
-func historyDBPath() string {
-	d := os.Getenv("XDG_STATE_HOME")
-	if d == "" {
-		home, _ := os.UserHomeDir()
-		d = filepath.Join(home, ".local", "state")
-	}
-	return filepath.Join(d, "mugen-ai", "history.db")
-}
-
-func buildRegistry(cfg config.Config, model string) *provider.Registry {
-	providers := []provider.Provider{
-		provider.NewOllama(cfg.Provider.Ollama.Host),
-	}
-	if cfg.Provider.Google.Model != "" {
-		key := os.Getenv("GEMINI_API_KEY")
-		if key == "" {
-			key = os.Getenv("GOOGLE_API_KEY")
-		}
-		if key != "" {
-			providers = append(providers, provider.NewGoogle(key, cfg.Provider.Google.Model))
-		}
-	}
-	return provider.NewRegistry(model, providers...)
 }
