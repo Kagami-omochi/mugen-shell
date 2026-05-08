@@ -152,7 +152,7 @@ yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
        networkmanager network-manager-applet bluez bluez-utils \
        fcitx5 fcitx5-mozc fcitx5-im fcitx5-configtool \
        awww mpvpaper ffmpeg matugen-bin socat \
-       grim slurp wl-clipboard cliphist \
+       grim slurp wl-clipboard cliphist imv curl \
        zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search fzf \
        eza bat ugrep fastfetch jp2a thunar \
        ttf-mplus-nerd bibata-cursor-theme colloid-gtk-theme-git \
