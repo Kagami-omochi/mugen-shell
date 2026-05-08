@@ -267,13 +267,13 @@ Item {
             let count = notificationListModel.count
             if (count === 0) return
 
-            if (event.key === Qt.Key_Down) {
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
                 let next = notificationList.currentIndex + 1
                 if (next >= count) next = 0
                 notificationList.currentIndex = next
                 notificationList.positionViewAtIndex(next, ListView.Contain)
                 event.accepted = true
-            } else if (event.key === Qt.Key_Up) {
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                 let prev = notificationList.currentIndex - 1
                 if (prev < 0) prev = count - 1
                 notificationList.currentIndex = prev

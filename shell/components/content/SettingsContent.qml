@@ -223,13 +223,13 @@ Item {
             let count = settingsList.count
             if (count === 0) return
 
-            if (event.key === Qt.Key_Down) {
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
                 let next = settingsList.currentIndex + 1
                 if (next >= count) next = 0
                 settingsList.currentIndex = next
                 settingsList.positionViewAtIndex(next, ListView.Contain)
                 event.accepted = true
-            } else if (event.key === Qt.Key_Up) {
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                 let prev = settingsList.currentIndex - 1
                 if (prev < 0) prev = count - 1
                 settingsList.currentIndex = prev

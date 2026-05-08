@@ -14,6 +14,9 @@ Item {
         {
             name: "Global",
             rows: [
+                { keys: "Super+hjkl", desc: "Move focus between windows" },
+                { keys: "Super+Shift+hjkl", desc: "Move window in tile" },
+                { keys: "Super+Shift+Space", desc: "Toggle floating" },
                 { keys: "Super+R", desc: "App launcher" },
                 { keys: "Super+W", desc: "Wallpaper picker" },
                 { keys: "Super+M", desc: "Music player" },
@@ -23,9 +26,9 @@ Item {
                 { keys: "Super+A", desc: "AI assistant" },
                 { keys: "Super+C", desc: "Calendar" },
                 { keys: "Super+S", desc: "Screenshot gallery" },
-                { keys: "Super+H", desc: "WiFi panel" },
-                { keys: "Super+J", desc: "Bluetooth panel" },
-                { keys: "Super+L", desc: "Power menu" },
+                { keys: "Super+I", desc: "WiFi panel" },
+                { keys: "Super+E", desc: "Bluetooth panel" },
+                { keys: "Super+P", desc: "Power menu" },
                 { keys: "Super+,", desc: "Settings" },
                 { keys: "Super+Shift+T", desc: "Timer" },
                 { keys: "Super+Shift+A", desc: "AI assistant (floating window)" },
@@ -41,7 +44,7 @@ Item {
             name: "App Launcher",
             rows: [
                 { keys: "Type", desc: "Search apps" },
-                { keys: "←→↑↓", desc: "Navigate grid" },
+                { keys: "←→↑↓ / hjkl", desc: "Navigate grid" },
                 { keys: "Tab", desc: "Cycle apps" },
                 { keys: "Enter", desc: "Launch app" },
                 { keys: "Right-click", desc: "Toggle favorite" },
@@ -63,7 +66,7 @@ Item {
         {
             name: "Notifications",
             rows: [
-                { keys: "↑↓", desc: "Navigate notifications" },
+                { keys: "↑↓ / jk", desc: "Navigate notifications" },
                 { keys: "Home / End", desc: "First / Last" },
                 { keys: "Enter", desc: "Open notification's app + dismiss" },
                 { keys: "Delete / Backspace", desc: "Dismiss notification" },
@@ -83,7 +86,7 @@ Item {
         {
             name: "WiFi",
             rows: [
-                { keys: "↑↓", desc: "Navigate networks" },
+                { keys: "↑↓ / jk", desc: "Navigate networks" },
                 { keys: "Home / End", desc: "First / Last" },
                 { keys: "Enter", desc: "Connect (open) or expand (secured)" },
                 { keys: "P", desc: "Power toggle" },
@@ -93,7 +96,7 @@ Item {
         {
             name: "Bluetooth",
             rows: [
-                { keys: "↑↓", desc: "Navigate devices" },
+                { keys: "↑↓ / jk", desc: "Navigate devices" },
                 { keys: "Home / End", desc: "First / Last" },
                 { keys: "Enter", desc: "Connect / Pair" },
                 { keys: "Tab", desc: "Switch My Devices / Nearby" },
@@ -105,11 +108,11 @@ Item {
             name: "AI Assistant",
             rows: [
                 { keys: "Enter", desc: "Send message" },
-                { keys: "Shift+Enter", desc: "Newline" },
-                { keys: "PgUp / PgDn", desc: "Scroll message history" },
-                { keys: "Ctrl+↑↓", desc: "Scroll by smaller step" },
-                { keys: "Ctrl+End", desc: "Jump to latest message" },
-                { keys: "Ctrl+L", desc: "Clear conversation" },
+                { keys: "←→", desc: "Scroll the response (≈25 chars per press)" },
+                { keys: "Home / End", desc: "Jump to start / end of response" },
+                { keys: "Ctrl+C / Ctrl+A", desc: "Copy / select all of the response" },
+                { keys: "Type a letter", desc: "Discard the response and start a new question" },
+                { keys: "Click the orb", desc: "Detach into the floating window" },
             ]
         },
         {
@@ -123,14 +126,14 @@ Item {
         {
             name: "Power Menu",
             rows: [
-                { keys: "←→ / Tab", desc: "Navigate buttons" },
+                { keys: "←→ / hl / Tab", desc: "Navigate buttons" },
                 { keys: "Enter", desc: "Execute selected" },
             ]
         },
         {
             name: "Settings",
             rows: [
-                { keys: "↑↓", desc: "Navigate sections" },
+                { keys: "↑↓ / jk", desc: "Navigate sections" },
                 { keys: "Home / End", desc: "First / Last" },
                 { keys: "PgUp / PgDn", desc: "Jump 3 sections" },
                 { keys: "Enter / Space", desc: "Toggle switch or expand selection" },

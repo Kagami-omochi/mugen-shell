@@ -141,26 +141,26 @@ FocusScope {
                                 }
                             }
                             event.accepted = true
-                        } else if (event.key === Qt.Key_Left) {
+                        } else if (event.key === Qt.Key_Left || event.key === Qt.Key_H) {
                             if (currentIndex > 0) {
                                 currentIndex--
                                 positionViewAtIndex(currentIndex, GridView.Visible)
                             }
                             event.accepted = true
-                        } else if (event.key === Qt.Key_Right) {
+                        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_L) {
                             if (currentIndex < count - 1) {
                                 currentIndex++
                                 positionViewAtIndex(currentIndex, GridView.Visible)
                             }
                             event.accepted = true
-                        } else if (event.key === Qt.Key_Up) {
+                        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                             let colsPerRow = Math.floor(width / cellWidth)
                             if (colsPerRow > 0 && currentIndex >= colsPerRow) {
                                 currentIndex -= colsPerRow
                                 positionViewAtIndex(currentIndex, GridView.Visible)
                             }
                             event.accepted = true
-                        } else if (event.key === Qt.Key_Down) {
+                        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
                             let colsPerRow = Math.floor(width / cellWidth)
                             if (colsPerRow > 0 && currentIndex < count - colsPerRow) {
                                 currentIndex += colsPerRow

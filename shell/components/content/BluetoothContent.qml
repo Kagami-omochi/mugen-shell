@@ -135,13 +135,13 @@ Item {
             let count = activeList.count
             if (count === 0) return
 
-            if (event.key === Qt.Key_Down) {
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
                 let next = activeList.currentIndex + 1
                 if (next >= count) next = 0
                 activeList.currentIndex = next
                 activeList.positionViewAtIndex(next, ListView.Contain)
                 event.accepted = true
-            } else if (event.key === Qt.Key_Up) {
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                 let prev = activeList.currentIndex - 1
                 if (prev < 0) prev = count - 1
                 activeList.currentIndex = prev

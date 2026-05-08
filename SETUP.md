@@ -212,7 +212,7 @@ For terminal use: `mugen-ai chat`.
 |-----------|--------|
 | `Super + R` | App launcher |
 | `Super + W` | Wallpaper picker |
-| `Super + L` | Power menu |
+| `Super + P` | Power menu |
 | `Super + V` | Clipboard history |
 | `Super + M` | Music player |
 | `Super + T` | Notification center |
@@ -221,8 +221,8 @@ For terminal use: `mugen-ai chat`.
 | `Super + C` | Calendar |
 | `Super + S` | Screenshot gallery |
 | `Super + U` | Volume / microphone control |
-| `Super + H` | WiFi panel |
-| `Super + J` | Bluetooth panel |
+| `Super + I` | WiFi panel |
+| `Super + E` | Bluetooth panel |
 | `Super + ,` | Settings |
 | `Super + Shift + T` | Countdown timer |
 | `Super + /` | Keyboard shortcuts reference |
@@ -243,6 +243,9 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 | `Super + Shift + 1-5` | Move window to workspace (silent) |
 | `Alt + Shift + 1-5` | Move window to workspace |
 | `Super + Tab` | Cycle windows in workspace |
+| `Super + hjkl` | Move focus between windows (vim-style) |
+| `Super + Shift + hjkl` | Move window in tile (vim-style) |
+| `Super + Shift + Space` | Toggle floating |
 | `Super + F` | Fullscreen |
 | `Super + F12` / `Print` | Region screenshot (grim + slurp + wl-copy) |
 | `Super + Shift + S` | Toggle special workspace |

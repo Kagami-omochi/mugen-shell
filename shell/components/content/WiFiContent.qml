@@ -115,13 +115,13 @@ Item {
             let count = networkList.count
             if (count === 0) return
 
-            if (event.key === Qt.Key_Down) {
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
                 let next = networkList.currentIndex + 1
                 if (next >= count) next = 0
                 networkList.currentIndex = next
                 networkList.positionViewAtIndex(next, ListView.Contain)
                 event.accepted = true
-            } else if (event.key === Qt.Key_Up) {
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                 let prev = networkList.currentIndex - 1
                 if (prev < 0) prev = count - 1
                 networkList.currentIndex = prev

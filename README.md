@@ -99,12 +99,15 @@ Most-used panels:
 | `Super + Shift + A` | AI assistant (floating window) |
 | `Super + C` | Calendar |
 | `Super + Shift + T` | Timer |
-| `Super + H` | WiFi |
-| `Super + J` | Bluetooth |
+| `Super + I` | WiFi |
+| `Super + E` | Bluetooth |
 | `Super + S` | Screenshot gallery |
-| `Super + L` | Power menu |
+| `Super + P` | Power menu |
 | `Super + ,` | Settings |
 | `Super + /` | Keyboard shortcuts reference |
+| `Super + hjkl` | Move focus between windows (vim-style) |
+| `Super + Shift + hjkl` | Move window in tile (vim-style) |
+| `Super + Shift + Space` | Toggle floating |
 
 Right-click the power menu icon to jump straight into settings. Click the chevron next to the notification icon to expand the system tray. Full keybind list lives in [SETUP.md](SETUP.md).
 

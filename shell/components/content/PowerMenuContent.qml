@@ -135,6 +135,7 @@ FocusScope {
                     modeManager.closeAllModes()
                     event.accepted = true
                 } else if (event.key === Qt.Key_Left ||
+                          event.key === Qt.Key_H ||
                           (event.key === Qt.Key_Tab && event.modifiers & Qt.ShiftModifier) ||
                           event.key === Qt.Key_Backtab) {
                     if (root.currentButtonIndex < 0) {
@@ -146,7 +147,7 @@ FocusScope {
                     }
                     updateButtonFocus()
                     event.accepted = true
-                } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab) {
+                } else if (event.key === Qt.Key_Right || event.key === Qt.Key_L || event.key === Qt.Key_Tab) {
                     if (root.currentButtonIndex < 0) {
                         root.currentButtonIndex = 0
                     } else if (root.currentButtonIndex < 5) {
