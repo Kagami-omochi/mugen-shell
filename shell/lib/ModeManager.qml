@@ -51,12 +51,9 @@ QtObject {
     function switchMode(newMode, viaIpc) {
         let wasViaIpc = openedViaIpc
 
-        // IMPORTANT: Set openedViaIpc BEFORE currentMode so listeners of
-        // currentModeChanged (e.g. Bar.qml's requestActivate + focus grab)
-        // see the correct openedViaIpc value. Otherwise the keybind-open
-        // focus grab never fires and ESC only works once the mouse has
-        // entered the panel (Wayland gives focus via pointer entry as a
-        // fallback).
+        // openedViaIpc must be set before currentMode — listeners of
+        // currentModeChanged read it synchronously to decide whether to
+        // grab focus, and a stale value breaks keybind-open ESC handling.
         if (newMode === currentMode) {
             openedViaIpc = false
             currentMode = "normal"
@@ -79,9 +76,7 @@ QtObject {
         return currentMode === modeName
     }
 
-    // Emitted when the user interacts with any open panel. Bar.qml listens
-    // and restarts the central autoCloseTimer. Panels call bump() from their
-    // MouseArea onPositionChanged / onClicked / Keys.onPressed handlers.
+    // Bar.qml restarts the central autoCloseTimer when this fires.
     signal interaction()
 
     function bump() {
@@ -124,10 +119,9 @@ QtObject {
         
         stdout: SplitParser {
             onRead: data => {
-                // SplitParser drops the trailing newline; preserve it so
-                // multi-line IPC payloads don't get concatenated when the
-                // file has several queued commands ("open volume" +
-                // "open volume" → "open volumeopen volume" otherwise).
+                // SplitParser drops the trailing newline; preserve it or
+                // queued commands concatenate (e.g. "open volume" + "open
+                // volume" → "open volumeopen volume").
                 if (data) {
                     ipcReader.output += data + "\n"
                 }

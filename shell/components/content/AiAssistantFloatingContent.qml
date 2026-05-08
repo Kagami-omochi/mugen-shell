@@ -117,10 +117,9 @@ FocusScope {
         loadCurrentProcess.running = true
     }
 
-    // Split assistant content into renderable blocks.
-    // Even-indexed splits (on ```) are markdown text; odd-indexed are code blocks.
-    // An unclosed ``` (during streaming) is rendered as an open code block so the
-    // user sees partial code immediately rather than mid-fence text.
+    // Split on ``` — even parts are markdown prose, odd parts are code
+    // blocks. An unclosed ``` mid-stream still renders as a code block so
+    // partial code shows up immediately.
     function parseBlocks(content) {
         if (!content) return []
         let blocks = []
@@ -156,7 +155,6 @@ FocusScope {
         }
     }
 
-    // ── Background: cosmic gradient ─────────────────────────────────────
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
@@ -166,7 +164,6 @@ FocusScope {
         }
     }
 
-    // Subtle radial nebula glow at the center of the window
     Item {
         anchors.fill: parent
         Canvas {
@@ -193,7 +190,6 @@ FocusScope {
         }
     }
 
-    // Drift particles — sparse dim points slowly moving
     Canvas {
         id: particles
         anchors.fill: parent
@@ -251,7 +247,6 @@ FocusScope {
         }
     }
 
-    // ── Conversation sidebar (left) ─────────────────────────────────────
     Ai.ConversationList {
         id: sidebar
         anchors.left: parent.left
@@ -274,7 +269,7 @@ FocusScope {
         onToggleRequested: root.sidebarCollapsed = !root.sidebarCollapsed
     }
 
-    // Floating expand toggle, only visible when the sidebar is collapsed
+    // Visible only while the sidebar is collapsed.
     Item {
         id: expandToggle
         anchors.left: sidebar.right
@@ -309,7 +304,6 @@ FocusScope {
         }
     }
 
-    // ── Main pane (everything to the right of the sidebar) ──────────────
     Item {
         id: mainPane
         anchors.left: sidebar.right
@@ -318,7 +312,6 @@ FocusScope {
         anchors.bottom: parent.bottom
         z: 2
 
-    // ── Top chrome: model selector ──────────────────────────────────────
     RowLayout {
         id: topChrome
         anchors.top: parent.top
@@ -356,9 +349,9 @@ FocusScope {
         }
     }
 
-    // ── The orb: morphs between empty (center, large) and active
-    //    (bottom-left of latest AI message). Size + position animate together,
-    //    so during streaming the orb trails the bottom of growing text.
+    // Morphs between empty-state (centered, large) and active-state
+    // (bottom-left of latest AI message). Position animates so during
+    // streaming the orb trails the growing text.
     Item {
         id: orb
         z: 4
@@ -428,7 +421,6 @@ FocusScope {
         }
     }
 
-    // ── Empty state: greeting + prompt chips ────────────────────────────
     Item {
         id: emptyOverlay
         anchors.fill: parent
@@ -485,7 +477,6 @@ FocusScope {
         }
     }
 
-    // ── Active state: chat list ─────────────────────────────────────────
     Item {
         id: activeOverlay
         anchors.fill: parent
@@ -540,7 +531,6 @@ FocusScope {
                     width: parent.width
                     spacing: modeManager.scale(6)
 
-                    // User messages: plain right-aligned text (no markdown rendering)
                     Text {
                         visible: !delegateRoot.isAssistant && modelData.content !== ""
                         width: parent.width
@@ -554,7 +544,6 @@ FocusScope {
                         lineHeight: 1.5
                     }
 
-                    // Assistant messages: split into markdown text + code-block delegates
                     Repeater {
                         model: delegateRoot.assistantBlocks
 
@@ -597,7 +586,7 @@ FocusScope {
                         }
                     }
 
-                    // Reserve space for the global orb that lands at the bottom-left
+                    // Reserves space for the global orb that lands here.
                     Item {
                         visible: delegateRoot.isAssistant && delegateRoot.isLatest
                         width: 1
@@ -608,7 +597,6 @@ FocusScope {
         }
     }
 
-    // ── Bottom: thin underline input ────────────────────────────────────
     Item {
         id: inputBar
         anchors.left: parent.left
@@ -621,7 +609,6 @@ FocusScope {
         z: 5
         visible: root.aiAvailable && root.hasModel
 
-        // Underline with glow on focus
         Rectangle {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
@@ -734,7 +721,6 @@ FocusScope {
         }
     }
 
-    // ── Service unavailable / no model states ───────────────────────────
     Item {
         anchors.fill: parent
         z: 3
@@ -770,7 +756,6 @@ FocusScope {
     }
     } // mainPane
 
-    // ── Process objects (chat / health / models / switch / conversations) ───────
     Process {
         id: chatProcess
         property string payload: ""

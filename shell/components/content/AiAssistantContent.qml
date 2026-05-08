@@ -21,8 +21,7 @@ FocusScope {
     // Fallback used when no AiBackend is wired (e.g. legacy embedding paths).
     readonly property string _baseUrl: aiBackend ? aiBackend.baseUrl : "http://127.0.0.1:11435"
 
-    // Spotlight-style: keep the bar at its normal height, just give the AI mode
-    // a centered horizontal slot wide enough for a sentence or two.
+    // Spotlight-style: normal bar height, wide centered slot.
     readonly property var requiredBarSize: ({
         "height": modeManager.scale(60),
         "leftMargin": modeManager.scale(620),
@@ -38,11 +37,9 @@ FocusScope {
     property string currentModel: ""
     property int currentConvId: 0
 
-    // While streaming, the partial response goes into responseDisplay and is
-    // shown in the placeholder. Once the stream completes we move the full
-    // response into the input field itself (read-only) so the user can scroll
-    // through long replies with arrow keys / Home / End and copy with Ctrl+C.
-    // The first non-navigation keypress clears it back into typing mode.
+    // While streaming, partial reply lives in the placeholder. On done we
+    // shove the full text into the input field (read-only) so arrow keys
+    // scroll it; the first printable keypress flips back to typing mode.
     property string responseDisplay: ""
     property bool displayingResponse: false
 
@@ -57,8 +54,7 @@ FocusScope {
     readonly property string activePlaceholder: {
         if (isThinking) return "thinking"
         if (responseDisplay.length > 0) {
-            // Bar AI is single-line: collapse newlines so the text flows
-            // horizontally rather than wrapping or pushing layout downward.
+            // Single-line bar: collapse newlines.
             return responseDisplay.replace(/\s*\n+\s*/g, " ")
         }
         return idlePlaceholder
@@ -70,9 +66,7 @@ FocusScope {
         responseDisplay = ""
         displayingResponse = false
         streaming = true
-        // Bar AI's model is whatever Settings → "Bar AI model" picked. An
-        // empty string means "follow the backend default" — the server falls
-        // back to the registry global in that case.
+        // Empty string falls back to the backend's registry default.
         let modelChoice = (settingsManager && settingsManager.barAiModel) ? settingsManager.barAiModel : ""
         chatProcess.payload = JSON.stringify({
             message: text,
@@ -101,9 +95,7 @@ FocusScope {
         target: modeManager
         function onCurrentModeChanged() {
             if (modeManager.isMode("ai")) {
-                // Bar AI is the "quick question" entry point — always open as a
-                // fresh blank chat. Long-running conversations live in the float
-                // window where the sidebar exposes history.
+                // Bar = quick-question entry; long chats live in the float.
                 root.newChat()
                 healthProcess.running = true
                 focusTimer.restart()
@@ -139,8 +131,7 @@ FocusScope {
     Item {
         id: panel
         anchors.fill: parent
-        // Match the bar surface inset (requiredBarSize.leftMargin) so the row
-        // sits inside the rounded visual bar instead of overflowing it.
+        // Sit inside the rounded bar surface (requiredBarSize.leftMargin + 20).
         anchors.leftMargin: modeManager.scale(640)
         anchors.rightMargin: modeManager.scale(640)
         z: 3
@@ -169,15 +160,13 @@ FocusScope {
             }
         ]
 
-        // Single row: orb + input pill + detach icon.
         RowLayout {
             anchors.fill: parent
             anchors.topMargin: modeManager.scale(8)
             anchors.bottomMargin: modeManager.scale(8)
             spacing: modeManager.scale(12)
 
-            // Ambient orb on the left — also a portal: click to detach into the
-            // floating window. Hover gently scales it up to hint interactivity.
+            // Click to detach into the floating window.
             Item {
                 id: orbSlot
                 Layout.preferredWidth: modeManager.scale(36)
@@ -209,7 +198,6 @@ FocusScope {
                 }
             }
 
-            // Input pill — TextInput + send button inside a rounded glass rect
             Rectangle {
                 id: inputPill
                 Layout.fillWidth: true
@@ -245,10 +233,7 @@ FocusScope {
                     readOnly: root.displayingResponse
                     cursorVisible: true
 
-                    // Step size for arrow-key navigation while reading a long
-                    // response. Per-char moves rarely scroll the visible
-                    // window in a 1-row Spotlight, so we jump in chunks for
-                    // a more responsive scroll feel.
+                    // Single-char arrow moves rarely scroll the 1-row view; jump in chunks.
                     readonly property int navStep: 25
 
                     Keys.onPressed: (event) => {
@@ -297,14 +282,11 @@ FocusScope {
                                     return
                                 }
                             }
-                            // Ignore modifier-only / function keys (event.text
-                            // is empty for Ctrl, Shift, Alt, F1-F12, etc).
+                            // Ignore modifier-only / function keys (event.text is empty).
                             if (!event.text || event.text.length === 0) {
                                 event.accepted = true
                                 return
                             }
-                            // Printable key — switch into typing mode and use
-                            // this character as the first input.
                             inputField.text = event.text
                             inputField.cursorPosition = inputField.text.length
                             root.displayingResponse = false
@@ -331,9 +313,6 @@ FocusScope {
                         color: root.responseDisplay.length > 0 || root.streaming
                             ? (root.theme ? root.theme.textPrimary : Qt.rgba(0.95, 0.93, 0.98, 0.92))
                             : (root.theme ? root.theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.6))
-                        // Match the float "What's on your mind?" styling — same
-                        // family/weight/letterSpacing — and bump it slightly
-                        // when thinking so the bar feels in tune with float.
                         font.pixelSize: root.isThinking
                             ? modeManager.scale(15)
                             : parent.font.pixelSize
@@ -341,15 +320,11 @@ FocusScope {
                         font.weight: Font.Light
                         font.letterSpacing: root.isThinking ? 1.2 : 0.3
                         font.italic: !(root.responseDisplay.length > 0 && !root.isThinking)
-                        // While streaming, keep the *latest* chunk visible by
-                        // eliding from the left so the head turns into "…"
-                        // and the tail flows under the cursor.
+                        // Streaming: ElideLeft keeps the latest chunk visible.
                         elide: root.streaming && root.responseDisplay.length > 0
                             ? Text.ElideLeft
                             : Text.ElideRight
-                        // Hide while the user is composing IME preedit text too,
-                        // otherwise the response and the half-typed Japanese
-                        // characters render on top of each other.
+                        // Hide during IME preedit, otherwise it overlaps half-typed CJK.
                         visible: parent.text.length === 0
                             && parent.preeditText.length === 0
                             && !parent.inputMethodComposing
@@ -363,9 +338,6 @@ FocusScope {
                         Behavior on color { ColorAnimation { duration: 200 } }
                         Behavior on font.letterSpacing { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
-                        // Breath pulse — opacity oscillates while thinking,
-                        // syncing with the orb's idle breath rhythm. Snaps back
-                        // to 1.0 once the response starts streaming in.
                         SequentialAnimation on opacity {
                             id: breathAnim
                             loops: Animation.Infinite
@@ -437,7 +409,6 @@ FocusScope {
         }
     }
 
-    // ── Process objects (chat / health / models / switch / current) ─────
     Process {
         id: chatProcess
         property string payload: ""
@@ -476,9 +447,7 @@ FocusScope {
             if (exitCode !== 0 && root.responseDisplay.length === 0) {
                 root.responseDisplay = "[connection failed]"
             }
-            // Move the full response into the input field so the user can
-            // scroll, select, and copy it. Any printable keypress flips back
-            // into typing mode (handled in inputField.Keys.onPressed).
+            // Park the response in the input field so it can be scrolled / copied.
             if (root.responseDisplay.length > 0) {
                 inputField.text = root.responseDisplay.replace(/\s*\n+\s*/g, " ")
                 inputField.cursorPosition = 0

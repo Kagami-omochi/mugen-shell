@@ -85,8 +85,7 @@ func (h *History) ConvID() int64 {
 	return h.convID
 }
 
-// ConvModel returns the model bound to the current conversation, or "" if no
-// conversation is loaded (or its model column is unset, e.g. legacy rows).
+// ConvModel returns the model bound to the current conversation, or "".
 func (h *History) ConvModel() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -148,8 +147,7 @@ func (h *History) Add(role, content, model string) error {
 	return nil
 }
 
-// RemoveLast drops the most recent message — used when a chat call fails after
-// the user message was already persisted.
+// RemoveLast drops the most recent message (called when a chat fails post-Add).
 func (h *History) RemoveLast() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -197,8 +195,8 @@ func (h *History) NewConversation(model string) (int64, error) {
 	return id, nil
 }
 
-// DeleteConversation removes a conversation. If it was current, picks the most recent
-// remaining conversation as current (or none if the store is empty).
+// DeleteConversation removes a conversation; if it was current, falls back
+// to the most recent remaining one (or no current at all).
 func (h *History) DeleteConversation(id int64) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()

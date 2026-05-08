@@ -57,10 +57,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 type chatRequest struct {
 	Message        string `json:"message"`
 	ConversationID int64  `json:"conversation_id"`
-	// Model is consulted only when the request creates a new conversation
-	// (ConversationID == 0). For an existing conversation we always honour
-	// the model already bound to that row so a single conversation can't end
-	// up with replies from multiple providers.
+	// Used only when ConversationID == 0; existing conversations always run
+	// on the model bound to their row.
 	Model string `json:"model,omitempty"`
 }
 
@@ -73,20 +71,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Each chat request specifies its target conversation explicitly:
-	// 0 means "start a new one" (Add will auto-create), >0 routes the message
-	// into that conversation. This keeps two open windows from racing on a
-	// shared "current" pointer.
+	// 0 starts a fresh conversation, >0 appends to that one. Explicit per
+	// request so two open windows don't race on a shared current pointer.
 	if err := s.history.Switch(req.ConversationID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Pick the model for this turn:
-	//   - existing conversation → its bound model wins (so a chat stays on
-	//     one provider for its entire life)
-	//   - new conversation → caller's req.Model, falling back to the
-	//     registry default (i.e. whatever PUT /model last set)
+	// Bound model wins for existing conversations; new ones fall back
+	// req.Model → registry default.
 	model := s.history.ConvModel()
 	if model == "" {
 		model = req.Model
@@ -114,9 +107,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the conversation id up-front so the client can sync state without a
-	// separate /conversations/current round-trip — eliminates a race where
-	// rapid follow-up messages would create another fresh conversation.
+	// Up-front sync: rapid follow-up messages otherwise raced on the
+	// not-yet-loaded conversation id.
 	idData, _ := json.Marshal(map[string]any{
 		"conversation_id": s.history.ConvID(),
 		"model":           model,
@@ -172,10 +164,8 @@ func (s *Server) handleSwitchModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// PUT /model now only changes the *default* model used when a future
-	// conversation is created. Existing conversations keep the model they
-	// were started with, so this no longer mints an empty conversation row
-	// or disturbs whatever the user is currently reading.
+	// Only updates the default for the *next* new conversation; existing
+	// rows keep their bound model.
 	s.registry.SetModel(req.Model)
 	_ = state.SaveModel(req.Model)
 

@@ -30,13 +30,11 @@ FocusScope {
         return Qt.formatDate(d, "MMM d")
     }
 
-    // Subtle glassy panel — slightly darker than the main canvas
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0.02, 0.015, 0.06, 0.55)
     }
 
-    // Right edge separator
     Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
@@ -50,7 +48,6 @@ FocusScope {
         anchors.margins: modeManager.scale(10)
         spacing: modeManager.scale(8)
 
-        // ── Header: brand title + collapse toggle ───────────────────
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: modeManager.scale(34)
@@ -102,7 +99,6 @@ FocusScope {
             }
         }
 
-        // ── New chat button ─────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: modeManager.scale(36)
@@ -148,7 +144,6 @@ FocusScope {
             }
         }
 
-        // ── Section label ───────────────────────────────────────────
         Text {
             Layout.topMargin: modeManager.scale(6)
             Layout.leftMargin: modeManager.scale(4)
@@ -160,7 +155,6 @@ FocusScope {
             visible: root.conversations.length > 0
         }
 
-        // ── Conversation list ───────────────────────────────────────
         ListView {
             id: convList
             Layout.fillWidth: true

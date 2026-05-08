@@ -191,9 +191,8 @@ QtObject {
         }
     }
 
-    // Watch the settings file for external writes (e.g. from the floating
-    // settings window in a separate Quickshell process). When it changes,
-    // re-read and re-apply so every process stays in sync.
+    // Re-read on external writes (e.g. from the floating Settings window
+    // in a separate Quickshell process) so every shell instance stays in sync.
     property FileView settingsWatcher: FileView {
         path: settingsManager.userSettingsFile
         watchChanges: true

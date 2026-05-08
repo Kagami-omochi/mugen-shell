@@ -12,9 +12,8 @@ Item {
     property string lang: ""
     property string code: ""
 
-    // Emitted when the copy icon is clicked. The parent owns a single shared
-    // wl-copy Process — keeping it out of CodeBlock means a chat with many
-    // code blocks doesn't stack up that many idle Process instances.
+    // Parent runs the shared wl-copy Process; per-block Processes would
+    // stack idle instances for chats with many code blocks.
     signal copyRequested(string text)
 
     implicitHeight: container.implicitHeight
@@ -39,7 +38,6 @@ Item {
             anchors.top: parent.top
             spacing: 0
 
-            // Top bar: language + copy
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: modeManager.scale(26)
@@ -103,14 +101,12 @@ Item {
                 }
             }
 
-            // Faint divider
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Qt.rgba(0.55, 0.55, 0.75, 0.12)
             }
 
-            // Code body
             TextEdit {
                 Layout.fillWidth: true
                 Layout.leftMargin: modeManager.scale(12)

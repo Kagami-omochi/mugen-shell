@@ -208,8 +208,8 @@ func (s *Store) ListMessages(convID int64) ([]Message, error) {
 	return out, rows.Err()
 }
 
-// RemoveLastMessage drops the most recent message in a conversation.
-// Used when a streaming chat fails after the user message was already saved.
+// RemoveLastMessage drops the most recent message (called when a chat fails
+// after the user message was already persisted).
 func (s *Store) RemoveLastMessage(convID int64) error {
 	_, err := s.db.Exec(`DELETE FROM messages WHERE id = (
 		SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC, id DESC LIMIT 1
@@ -246,8 +246,7 @@ func (s *Store) ClearCurrentConversationID() error {
 	return err
 }
 
-// DeriveTitle picks a reasonable conversation title from an early user message.
-// Trims to a single line and caps the length.
+// DeriveTitle picks a conversation title from an early user message.
 func DeriveTitle(message string) string {
 	for i, r := range message {
 		if r == '\n' {

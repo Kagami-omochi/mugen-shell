@@ -18,10 +18,8 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
 
-    // Overlay layer + per-monitor fullscreen check: in normal mode we hide
-    // entirely so the fullscreen app keeps every pixel, then float above it
-    // the moment a panel opens. Per-monitor (not focusedWorkspace) so a
-    // fullscreen window on a sibling screen doesn't pull this bar down.
+    // Overlay layer so panels can ride above fullscreen apps; while a panel
+    // isn't open we hide entirely so the fullscreen app keeps every pixel.
     WlrLayershell.layer: WlrLayer.Overlay
 
     readonly property var hyprMonitor: barWindow.screen
@@ -35,7 +33,7 @@ PanelWindow {
     implicitHeight: modeManager.currentBarSize.height
     exclusiveZone: barHidden ? 0 : modeManager.scale(60)
     visible: !barHidden
-    // In normal mode, don't hold keyboard focus so launched apps receive focus instead
+    // Release keyboard focus in normal mode so launched apps can receive it.
     focusable: !modeManager.isMode("normal")
     color: "transparent"
 
@@ -61,9 +59,8 @@ PanelWindow {
                 return
             }
 
-            // Music panel shortcuts — handled here because escKeyHandler owns
-            // active focus while any panel is open, so per-panel Keys handlers
-            // never fire.
+            // Music shortcuts handled here — per-panel Keys handlers don't fire
+            // because escKeyHandler owns active focus while a panel is open.
             if (modeManager.isMode("music") && musicPlayerManager) {
                 if (event.key === Qt.Key_Space) {
                     musicPlayerManager.playPause()
@@ -90,10 +87,8 @@ PanelWindow {
         target: modeManager
         function onCurrentModeChanged() {
             if (!modeManager.isMode("normal") && modeManager.openedViaIpc) {
-                // PanelWindow has no requestActivate(); the focusable:true
-                // + HyprlandFocusGrab combo is enough to give the surface
-                // keyboard focus. Forward that focus into the internal
-                // escKeyHandler so Keys.onPressed fires.
+                // PanelWindow has no requestActivate() — focusable + FocusGrab
+                // give the surface keyboard focus, then push it inward.
                 Qt.callLater(() => {
                     escKeyHandler.forceActiveFocus()
                 })
@@ -103,10 +98,8 @@ PanelWindow {
 
     property alias notificationManager: notificationManager
 
-    // Centralized auto-close: any open mode closes after the configured idle
-    // timeout unless interaction bumps the timer. Interval 0 disables entirely.
-    // The "ai" mode is exempted — users read streamed responses without
-    // moving the cursor, so we rely on ESC / click-outside to close it.
+    // Auto-close any open mode after idle. AI is exempt — users read streamed
+    // responses without moving the cursor, so it relies on ESC / click-outside.
     readonly property bool autoCloseEligible: !modeManager.isMode("normal")
         && !modeManager.isMode("ai")
         && settingsManager.autoCloseTimerInterval > 0
@@ -162,11 +155,8 @@ PanelWindow {
         id: timerManager
 
         onCompleted: {
-            // Open the timer panel only if no other mode is active so we
-            // don't yank focus from a panel the user is already using.
-            // Pass viaIpc=true so HyprlandFocusGrab activates and the bar
-            // actually receives keyboard focus instead of leaving it on
-            // whatever window was previously focused.
+            // Don't yank focus from another open panel. viaIpc activates
+            // HyprlandFocusGrab so the bar actually receives keyboard focus.
             if (modeManager.isMode("normal")) {
                 modeManager.switchMode("timer", true)
             }
@@ -518,9 +508,8 @@ PanelWindow {
         property var settingsManagerRef: settingsManager
         property var aiBackendRef: aiBackend
 
-        // Keep AI loaded after first open so chat history, streaming state,
-        // and model selection survive panel close/reopen. Other modules
-        // unload on close to keep memory flat.
+        // AI stays resident after first open so chat / streaming state survive
+        // close-reopen. Other modules unload to keep idle memory flat.
         property bool everLoaded: false
         active: modeManagerRef.isMode("ai") || everLoaded
         onLoaded: everLoaded = true

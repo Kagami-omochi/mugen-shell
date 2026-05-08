@@ -9,9 +9,8 @@ Item {
     required property string currentModel
     required property var availableModels
     property bool isOpen: false
-    // When false the selector renders as a read-only label of the current
-    // model — no dropdown, no hover chip — so a chat that's already bound to
-    // a model can't accidentally be switched mid-conversation.
+    // When false the chip is a read-only label — used mid-conversation so
+    // the bound model can't be swapped accidentally.
     property bool editable: true
 
     signal toggled()
