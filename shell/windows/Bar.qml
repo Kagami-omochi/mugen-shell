@@ -19,15 +19,21 @@ PanelWindow {
     anchors.right: true
 
     // Sit on the overlay layer so the bar can ride above fullscreen apps when
-    // the user opens a panel. While the focused workspace is genuinely
-    // fullscreen and we're in normal mode the bar disables itself entirely
-    // (visible:false + exclusiveZone:0) so the fullscreen app gets every
-    // pixel — re-enabling the moment a panel opens, which then floats on
-    // top of the fullscreen surface.
+    // the user opens a panel. While the focused workspace on *this* bar's
+    // monitor is fullscreen and we're in normal mode the bar disables
+    // itself entirely (visible:false + exclusiveZone:0) so the fullscreen
+    // app gets every pixel — re-enabling the moment a panel opens, which
+    // then floats on top of the fullscreen surface.
     WlrLayershell.layer: WlrLayer.Overlay
 
-    readonly property bool fullscreenActive: Hyprland.focusedWorkspace
-        ? Hyprland.focusedWorkspace.hasFullscreen
+    // Use the workspace currently active on *this* monitor (not
+    // Hyprland.focusedWorkspace) so a fullscreen window on one screen
+    // doesn't pull down the bar on the other.
+    readonly property var hyprMonitor: barWindow.screen
+        ? Hyprland.monitorFor(barWindow.screen)
+        : null
+    readonly property bool fullscreenActive: hyprMonitor && hyprMonitor.activeWorkspace
+        ? hyprMonitor.activeWorkspace.hasFullscreen
         : false
     readonly property bool barHidden: fullscreenActive && modeManager.isMode("normal")
 
