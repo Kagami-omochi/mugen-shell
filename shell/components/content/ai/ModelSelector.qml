@@ -69,7 +69,11 @@ Item {
         visible: selector.isOpen
         anchors.top: parent.bottom
         anchors.topMargin: selector.modeManager ? selector.modeManager.scale(4) : 4
-        anchors.horizontalCenter: parent.horizontalCenter
+        // Anchor to the chip's right edge so the dropdown grows leftward —
+        // the selector lives in the panel's top-right, where the right side
+        // is the window edge and the left side has plenty of room for the
+        // longer "vendor/model:tag" names from OpenRouter et al.
+        anchors.right: parent.right
         z: 10
 
         Rectangle {
