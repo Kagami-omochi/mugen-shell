@@ -61,14 +61,55 @@ Dropping wallpapers / notification sounds: place files under the corresponding X
 
 ## Install
 
-Two paths. Pick whichever matches your setup.
+Three paths. Pick whichever matches your setup.
 
-### Path A — Nix flake (recommended)
+### Path A — NixOS
 
-If you have Nix with flakes enabled (any Linux distro, including non-NixOS), you can pull mugen-shell into your home-manager configuration:
+NixOS users go through the umbrella flake at `?dir=nixos`. It enables `programs.hyprland`, drops the runtime stack into `environment.systemPackages`, and re-exports the home-manager module so the per-user pieces (mugen-ai user service, dotfiles) come from the same input.
 
 ```nix
-# flake.nix in your home config
+# /etc/nixos/flake.nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    mugen-shell.url = "github:tmy7533018/mugen-shell?dir=nixos";
+    mugen-shell.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  outputs = { nixpkgs, home-manager, mugen-shell, ... }: {
+    nixosConfigurations.mybox = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        mugen-shell.nixosModules.default
+        home-manager.nixosModules.home-manager
+        ({ ... }: {
+          # System layer
+          programs.mugen-shell.enable = true;
+
+          # User layer — same input, home-manager pieces
+          home-manager.users.YOUR_USER = {
+            imports = [ mugen-shell.homeManagerModules.default ];
+            programs.mugen-shell.enable = true;
+            programs.mugen-shell.includeSystemDeps = false; # already on the system path
+            home.stateVersion = "26.05";
+          };
+        })
+      ];
+    };
+  };
+}
+```
+
+Then `nixos-rebuild switch --flake /etc/nixos#mybox`.
+
+### Path B — Arch / Garuda / any non-NixOS Linux + Nix
+
+If you have Nix with flakes enabled but you're not on NixOS, point at the user-level flake (the repo root) and let pacman handle the Wayland / compositor stack:
+
+```nix
+# ~/.config/home-manager/flake.nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -90,16 +131,9 @@ If you have Nix with flakes enabled (any Linux distro, including non-NixOS), you
         { home.username = "YOUR_USER"; home.homeDirectory = "/home/YOUR_USER"; }
         ({ ... }: {
           programs.mugen-shell.enable = true;
-
-          # Skip the runtime-dep block if your OS already provides
-          # Hyprland / Quickshell / hypridle / hyprlock / mpvpaper / awww
-          # / matugen / etc. (e.g. Garuda or Arch with pacman) — avoids
-          # duplicating several GiB of binaries that already live in /usr.
-          # programs.mugen-shell.includeSystemDeps = false;
-
-          # Opt out of the mugen-ai backend if you don't want the AI panel.
-          # programs.mugen-shell.ai.enable = false;
-
+          # Wayland stack already on the OS path, skip the Nix copies
+          programs.mugen-shell.includeSystemDeps = false;
+          # Opt out of the AI backend with: programs.mugen-shell.ai.enable = false;
           home.stateVersion = "26.05";
         })
       ];
@@ -108,36 +142,11 @@ If you have Nix with flakes enabled (any Linux distro, including non-NixOS), you
 }
 ```
 
-Then:
+`home-manager switch --flake ~/.config/home-manager#YOUR_USER` activates it.
+
+Install the system stack with pacman before the first switch:
 
 ```bash
-home-manager switch --flake .#YOUR_USER
-```
-
-The module symlinks the Quickshell tree (readonly) into `~/.config/quickshell/mugen-shell`, copies the system/ dotfiles into `~/.config/{hypr,kitty,cava,matugen,fastfetch}` and `~/.config/starship.toml` on first activation (subsequent activations leave your edits alone), pulls in every runtime dep (Hyprland / hypridle / mpvpaper / awww / matugen / playerctl / grim / slurp / cava / cliphist / wl-clipboard / libnotify / pulseaudio / python3 / ...), and runs `mugen-ai` as a systemd user service.
-
-The runtime-deps block is gated behind `includeSystemDeps`. Set it to `false` if your OS already ships those packages — that one toggle keeps the Nix install footprint to mugen-ai + the QML tree + module overhead, instead of pulling the entire compositor stack into /nix/store next to the copies you already have in /usr.
-
-You still need to wire Hyprland into your display manager / login session yourself (NixOS module, or `Hyprland` from a TTY).
-
-### Path B — manual (Garuda / Arch / any non-Nix Linux)
-
-```bash
-git clone https://github.com/tmy7533018/mugen-shell.git ~/mugen-shell
-cd ~/mugen-shell
-make install        # symlinks + builds and enables mugen-ai
-```
-
-`make install` runs both:
-- `install-symlinks` — points `~/.config/quickshell/mugen-shell`, `~/.config/{cava,fastfetch,hypr,kitty,matugen}`, and `~/.config/starship.toml` at this checkout
-- `install-ai` — `go install` the mugen-ai binary, install + enable the systemd user unit
-
-If you only want one, run that target by itself: `make install-symlinks` or `make install-ai`. To remove: `make uninstall`.
-
-You're responsible for the OS-level packages on this path:
-
-```bash
-# Arch / Garuda
 yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
        pipewire pipewire-pulse pavucontrol cava playerctl pamixer \
        networkmanager network-manager-applet bluez bluez-utils \
@@ -150,7 +159,23 @@ yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
        python-gobject
 ```
 
-`mugen-ai` needs Go (Path B builds from source via `go install`). Path A bundles a prebuilt binary via the flake.
+(Set `includeSystemDeps = true` if you'd rather pull all of that into Nix — useful when the distro doesn't package something or you want a hermetic install.)
+
+You still wire Hyprland into your display manager / login session yourself (`Hyprland` from TTY, sddm session entry, etc.).
+
+### Path C — Pure manual (no Nix at all)
+
+```bash
+git clone https://github.com/tmy7533018/mugen-shell.git ~/mugen-shell
+cd ~/mugen-shell
+make install        # symlinks + builds and enables mugen-ai
+```
+
+`make install` runs:
+- `install-symlinks` — points `~/.config/quickshell/mugen-shell`, `~/.config/{cava,fastfetch,hypr,kitty,matugen}`, and `~/.config/starship.toml` at the checkout
+- `install-ai` — `go install` the mugen-ai binary, install + enable the systemd user unit
+
+`make install-symlinks` and `make install-ai` are independent if you only want one. Remove with `make uninstall`. Same `yay -S` list as Path B for the system stack. `mugen-ai` needs Go on this path (Paths A/B ship a prebuilt binary).
 
 ---
 
