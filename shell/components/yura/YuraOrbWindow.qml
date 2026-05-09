@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../content/ai" as Ai
 
@@ -13,6 +14,13 @@ PanelWindow {
     color: "transparent"
     visible: false
     screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+
+    readonly property var hyprMonitor: orbWindow.screen
+        ? Hyprland.monitorFor(orbWindow.screen)
+        : null
+    readonly property bool fullscreenActive: hyprMonitor && hyprMonitor.activeWorkspace
+        ? hyprMonitor.activeWorkspace.hasFullscreen
+        : false
 
     anchors {
         top: true
@@ -107,7 +115,9 @@ PanelWindow {
         height: yuraState.orbSize
 
         property real restOpacity: 1
-        opacity: restOpacity * (yuraState.aiDropdownOpen ? 0 : 1)
+        opacity: restOpacity
+            * (yuraState.aiDropdownOpen ? 0 : 1)
+            * (orbWindow.fullscreenActive && !yuraState.expanded ? 0 : 1)
 
         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
 
