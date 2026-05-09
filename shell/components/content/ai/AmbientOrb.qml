@@ -8,8 +8,10 @@ Item {
     property color orbColor: Qt.rgba(0.65, 0.55, 0.85, 0.9)
     property bool streaming: false
     property bool active: true
+    property bool showHalo: true
     property real haloScale: 1.5
     property real haloOpacity: 0.5
+    property real coreOpacity: 0.9
 
     property real pulseScale: 1.0
 
@@ -52,6 +54,7 @@ Item {
     // Outer halo — softer blob giving the orb a subtle glowing field.
     Common.BlobEffect {
         id: halo
+        visible: root.showHalo
         width: root.width * root.haloScale
         height: root.height * root.haloScale
         anchors.centerIn: parent
@@ -61,7 +64,7 @@ Item {
         baseOpacity: root.haloOpacity * (root.streaming ? 1.2 : 0.9)
         animationSpeed: root.streaming ? 0.07 : 0.025
         pointCount: 14
-        running: root.active
+        running: root.active && root.showHalo
 
         Behavior on baseOpacity { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
     }
@@ -72,7 +75,7 @@ Item {
         blobColor: root.orbColor
         layers: 3
         waveAmplitude: 4.0
-        baseOpacity: 0.9
+        baseOpacity: root.coreOpacity
         animationSpeed: root.streaming ? 0.13 : 0.04
         pointCount: 16
         running: root.active
