@@ -17,6 +17,7 @@ PanelWindow {
     color: "transparent"
 
     visible: false
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
 
     Connections {
         target: yuraState
@@ -142,6 +143,12 @@ PanelWindow {
             property: "aiOrbSize"
             when: contentLoader.item !== null
             value: contentLoader.item ? contentLoader.item.orbExternalSize : -1
+        }
+        Binding {
+            target: yuraState
+            property: "aiDropdownOpen"
+            when: contentLoader.item !== null
+            value: contentLoader.item ? contentLoader.item.modelDropdownOpen : false
         }
 
         MouseArea {

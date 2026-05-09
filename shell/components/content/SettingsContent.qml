@@ -470,6 +470,8 @@ Item {
                             case "dateFormat": return dateFormatSection
                             case "aiConfig": return aiConfigSection
                             case "aiBarModel": return aiBarModelSection
+                            case "yuraPanelSide": return yuraPanelSideSection
+                            case "yuraOrbRest": return yuraOrbRestSection
                             case "keyboardShortcuts": return keyboardShortcutsSection
                             default: return null
                         }
@@ -489,6 +491,8 @@ Item {
                     settingsModel.append({ "type": "dateFormat" })
                     settingsModel.append({ "type": "aiConfig" })
                     settingsModel.append({ "type": "aiBarModel" })
+                    settingsModel.append({ "type": "yuraPanelSide" })
+                    settingsModel.append({ "type": "yuraOrbRest" })
                     settingsModel.append({ "type": "keyboardShortcuts" })
                 }
             }
@@ -606,6 +610,24 @@ Item {
     Component {
         id: aiBarModelSection
         Settings.AiBarModelSection {
+            theme: root.theme
+            modeManager: root.modeManager
+            settingsManager: root.settingsManager
+        }
+    }
+
+    Component {
+        id: yuraPanelSideSection
+        Settings.YuraPanelSideSection {
+            theme: root.theme
+            modeManager: root.modeManager
+            settingsManager: root.settingsManager
+        }
+    }
+
+    Component {
+        id: yuraOrbRestSection
+        Settings.YuraOrbRestSection {
             theme: root.theme
             modeManager: root.modeManager
             settingsManager: root.settingsManager

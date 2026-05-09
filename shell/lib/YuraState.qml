@@ -11,11 +11,13 @@ QtObject {
 
     readonly property bool isLeft: panelSide !== "right"
 
-    property int panelWidth: 620
+    property int panelWidth: 700
     property int panelHeight: 640
     property int panelMargin: 16
 
-    property int orbCollapsedSize: 56
+    property bool aiDropdownOpen: false
+
+    property int orbCollapsedSize: 80
 
     property int sidebarWidth: 200
     property bool sidebarCollapsed: false
