@@ -46,6 +46,11 @@ PanelWindow {
         width: yuraState.orbSize
         height: yuraState.orbSize
 
+        smooth: true
+        antialiasing: true
+        layer.enabled: true
+        layer.smooth: true
+
         Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
         Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
         Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
