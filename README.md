@@ -33,14 +33,15 @@ For directory layout, install paths (Nix flake home-manager module or manual `ma
 
 https://github.com/user-attachments/assets/2409880e-4214-4b38-951c-834876570aaa
 
-Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + A`), a dedicated floating window (`Super + Shift + A`), and a corner orb that pops up a chat panel (`Super + Y`). It's powered by **mugen-ai**, a Go server bundled in this repo under [`ai/`](ai/) that fronts local [Ollama](https://ollama.com) models, Google Gemini, and any OpenAI-compatible backend (OpenAI, OpenRouter, LM Studio, vLLM, ...).
+Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + A`) and a corner orb that slides in a chat panel (`Super + Y`). The legacy floating window (`Super + Shift + A`) is still around for parallel testing but will be retired once the corner orb is fully validated. Yura is powered by **mugen-ai**, a Go server bundled in this repo under [`ai/`](ai/) that fronts local [Ollama](https://ollama.com) models, Google Gemini, and any OpenAI-compatible backend (OpenAI, OpenRouter, LM Studio, vLLM, ...).
 
-Built and enabled automatically on either install path (Nix flake or `make install` — see [SETUP.md](SETUP.md)).
+Built and enabled automatically on any install path (NixOS, Arch + Nix, or pure manual `make install` — see [SETUP.md](SETUP.md)).
 
-- Spotlight-style one-row prompt in the bar — orb + input pill, response streams into the placeholder, navigable read-only after streaming, orb click detaches into the floating window
-- Floating window with a dream-styled UI (cosmic gradient, drifting particles, ambient orb that travels from the centre to follow the latest reply) and a collapsible sidebar of past conversations
+- Spotlight-style one-row prompt in the bar — orb + input pill, response streams into the placeholder, navigable read-only after streaming, orb click detaches into the corner panel
+- Corner-popup panel that slides in from off-screen with the orb (left or right side, configurable), running in its own quickshell process so the bar stays responsive even while a long answer streams; sidebar of past conversations, dream-styled cosmic gradient + drifting particles, ambient orb that morphs from centre-top of the empty state to chase the latest reply
+- Cross-process state push: bar / panel / SSE-driven `/events` channel keep conversation lists and message bodies in sync the moment any one client mutates them
 - SQLite-persisted multi-conversation history (`~/.local/state/mugen-ai/history.db`) — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you actually send something
-- Per-conversation model binding — each chat stays on the provider it was started with; the float dropdown locks to read-only mid-conversation, and a Settings entry pins the bar AI's model
+- Per-conversation model binding — each chat stays on the provider it was started with; the panel dropdown locks to read-only mid-conversation, and a Settings entry pins the bar's model
 - Markdown rendering for assistant replies, with monospace code blocks that have their own hover-reveal copy button
 - Streaming SSE responses with stop button, BlobEffect breathing indicator, IME-aware placeholder
 - Configurable personality and real-time context injection (date/time, weather)
@@ -77,7 +78,7 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 - Screenshot capture with clipboard copy (`Super + F12`)
 - Screenshot gallery
 - Power menu
-- In-shell settings panel with configurable notification + timer sounds, theme, blur, animations, lock-timer, date format, and bar AI model
+- In-shell settings panel with configurable notification + timer sounds, theme, blur, animations, lock-timer, date format, bar Yura model, and Yura panel side
 
 ---
 

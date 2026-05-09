@@ -18,26 +18,34 @@ mugen-shell/
 │   │   │   └── volume/       # Audio device dropdown
 │   │   ├── managers/         # Audio, WiFi, Bluetooth, etc.
 │   │   ├── notification/     # Notification components
-│   │   └── ui/               # Clock, workspaces, power menu, etc.
-│   ├── lib/                  # ModeManager, Colors, Typography, ...
+│   │   ├── ui/               # Clock, workspaces, power menu, etc.
+│   │   └── yura/             # Yura corner-popup orb + chat panel
+│   ├── lib/                  # ModeManager, Colors, Typography, YuraState, ...
 │   ├── scripts/              # Shell + Python scripts (blur preset, lock timer, ...)
 │   ├── windows/              # Bar.qml (top-level surface)
 │   ├── settings.default.json # OSS-friendly defaults
-│   └── shell.qml             # Quickshell entry point
+│   ├── shell.qml             # Main Quickshell entry (bar + notifications)
+│   ├── yura-shell.qml        # Standalone Quickshell entry for Yura (separate process)
+│   ├── ai-shell.qml          # Legacy floating AI window (Super+Shift+A, scheduled for removal)
+│   └── settings-shell.qml    # Standalone Settings window (detach target)
 ├── ai/                       # mugen-ai Go backend
 │   ├── cmd/                  # CLI subcommands (chat, serve)
-│   ├── internal/             # Provider registry, server, history, ...
+│   ├── internal/             # Provider registry, server (HTTP + SSE /events), history, ...
 │   └── contrib/systemd/      # systemd user unit
 ├── system/                   # Dotfiles for the surrounding tools
 │   ├── hypr/                 # Hyprland (configs/, scripts/, hyprland.conf, ...)
+│   │   └── configs/          # autostart.conf / ime.conf / keybinds.conf / ...
 │   ├── kitty/                # Kitty terminal
 │   ├── fastfetch/            # System info display
 │   ├── matugen/              # Material You color generation + templates
 │   ├── cava/                 # Audio visualizer (themes + GLSL shaders)
 │   └── starship.toml         # Starship prompt
 ├── nix/
-│   └── home-manager.nix      # home-manager module
-├── flake.nix                 # Nix flake entry point
+│   └── home-manager.nix      # home-manager module (Arch + Nix path)
+├── nixos/
+│   ├── flake.nix             # Umbrella NixOS flake (re-exports root + adds nixosModules)
+│   └── module.nix            # NixOS system module body
+├── flake.nix                 # Root Nix flake (user-level, home-manager target)
 ├── flake.lock
 ├── Makefile                  # `make install` for non-Nix users
 ├── .zshrc
@@ -351,13 +359,19 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **CalendarFloatingContent** - Standalone two-pane Calendar window with SQLite-backed events (opens in its own window via Super + C)
 - **TimerContent** - Countdown timer UI (idle / running, ring + presets, keyboard control)
 - **SettingsFloatingContent** - Standalone scrolling Settings window (detach target)
-- **AiAssistantContent** - AI chat panel
+- **AiAssistantContent** - Bar Spotlight row (Super+A)
+- **AiAssistantFloatingContent** - Shared chat tree used by the Yura corner panel and the legacy floating window — sidebar, message list, model dropdown, internal orb
+
+### Yura (`shell/components/yura/`, `shell/yura-shell.qml`)
+- **yura-shell.qml** - Standalone Quickshell process; auto-started by Hyprland and toggled via `qs ipc call yura toggle`
+- **YuraOrbWindow** - Fullscreen overlay layer-shell window hosting the orb; slides in from off-screen on toggle
+- **YuraChatPanel** - Side-anchored layer-shell window that loads `AiAssistantFloatingContent` with `showInternalOrb: false`
 
 ### Managers (`shell/components/managers/`)
 MusicPlayerManager, NotificationManager, ClipboardManager, WiFiManager, BluetoothManager, AudioManager, AudioLevel, CavaManager, MicCavaManager, BatteryManager, WallpaperManager, ScreenshotManager, IdleInhibitorManager, ImeStatus.
 
 ### Core libraries (`shell/lib/`)
-ModeManager, SettingsManager, TimerManager, Colors, Typography, Animations, IconProvider, IconResolver.
+ModeManager, SettingsManager, TimerManager, Colors, Typography, Animations, IconProvider, IconResolver, AiBackend, YuraState.
 
 ---
 
