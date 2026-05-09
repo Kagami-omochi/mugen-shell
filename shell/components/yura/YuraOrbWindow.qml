@@ -138,6 +138,8 @@ PanelWindow {
             coreOpacity: 0.6
             corePointCount: 48
             coreWaveAmplitude: 0.5
+            idleBreathPeak: 1.15
+            idleBreathDuration: 1800
             active: orbWindow.visible && !(orbWindow.fullscreenActive && !yuraState.expanded)
         }
 

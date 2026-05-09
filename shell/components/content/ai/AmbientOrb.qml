@@ -16,14 +16,16 @@ Item {
     property int haloPointCount: 14
     property real coreWaveAmplitude: 4.0
     property real haloWaveAmplitude: 5.0
+    property real idleBreathPeak: 1.06
+    property int idleBreathDuration: 1800
 
     property real pulseScale: 1.0
 
     SequentialAnimation {
         id: idleBreath
         loops: Animation.Infinite
-        NumberAnimation { target: root; property: "pulseScale"; to: 1.06; duration: 1800; easing.type: Easing.InOutSine }
-        NumberAnimation { target: root; property: "pulseScale"; to: 1.0; duration: 1800; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "pulseScale"; to: root.idleBreathPeak; duration: root.idleBreathDuration; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "pulseScale"; to: 1.0; duration: root.idleBreathDuration; easing.type: Easing.InOutSine }
     }
 
     SequentialAnimation {
