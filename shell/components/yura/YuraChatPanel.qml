@@ -49,9 +49,9 @@ PanelWindow {
         id: chatBox
 
         x: yuraState.panelX
-        y: yuraState.panelMargin + 48
+        y: yuraState.panelY
         width: yuraState.panelWidth
-        height: chatWindow.height - y - yuraState.panelMargin
+        height: yuraState.panelHeight
         opacity: yuraState.panelOpacity
         visible: opacity > 0.01
 
@@ -74,6 +74,7 @@ PanelWindow {
             clip: true
 
             Content.AiAssistantFloatingContent {
+                id: aiContent
                 anchors.fill: parent
                 anchors.topMargin: yuraState.orbExpandedSize + 24
                 modeManager: stubModeManager
@@ -82,6 +83,7 @@ PanelWindow {
                 aiBackend: chatWindow.aiBackend
                 settingsManager: chatWindow.settingsManager
                 showInternalOrb: false
+                Component.onCompleted: sidebarCollapsed = true
             }
         }
 
