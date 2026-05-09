@@ -46,8 +46,43 @@ PanelWindow {
         width: yuraState.orbSize
         height: yuraState.orbSize
 
-        opacity: yuraState.aiDropdownOpen ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        property real dropdownGate: yuraState.aiDropdownOpen ? 0 : 1
+        Behavior on dropdownGate { NumberAnimation { duration: 320; easing.type: Easing.InOutCubic } }
+
+        property real expandGate: 0
+
+        SequentialAnimation {
+            id: orbOpenAnim
+            PauseAnimation { duration: 250 }
+            NumberAnimation { target: orb; property: "expandGate"; to: 1.0; duration: 900; easing.type: Easing.InOutSine }
+        }
+
+        NumberAnimation {
+            id: orbCloseAnim
+            target: orb; property: "expandGate"; to: 0; duration: 750; easing.type: Easing.OutCubic
+        }
+
+        Connections {
+            target: yuraState
+            function onExpandedChanged() {
+                if (yuraState.expanded) {
+                    orbCloseAnim.stop()
+                    orb.expandGate = 0
+                    orbOpenAnim.restart()
+                } else {
+                    orbOpenAnim.stop()
+                    orbCloseAnim.restart()
+                }
+            }
+        }
+
+        opacity: dropdownGate * expandGate
+        scale: 0.3 + expandGate * 0.7
+        transformOrigin: Item.Center
+
+        transform: Translate {
+            x: (1 - orb.expandGate) * (yuraState.orbRestX - yuraState.orbActiveX)
+        }
 
         smooth: true
         antialiasing: true

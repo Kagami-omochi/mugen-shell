@@ -55,9 +55,9 @@ QtObject {
         ? panelRestY + 1 + aiOrbY
         : panelRestY + mainPaneHeight * 0.18
 
-    readonly property real orbX: expanded ? orbActiveX : orbRestX
-    readonly property real orbY: expanded ? orbActiveY : orbRestY
-    readonly property real orbSize: expanded ? orbExpandedSize : orbCollapsedSize
+    readonly property real orbX: orbActiveX
+    readonly property real orbY: orbActiveY
+    readonly property real orbSize: orbExpandedSize
 
     readonly property real panelX: expanded ? panelRestX : panelHiddenX
     readonly property real panelY: panelRestY

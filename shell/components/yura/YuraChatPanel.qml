@@ -33,7 +33,7 @@ PanelWindow {
 
     Timer {
         id: chatHideTimer
-        interval: 650
+        interval: 900
         onTriggered: chatWindow.visible = false
     }
 
@@ -77,8 +77,8 @@ PanelWindow {
         opacity: yuraState.panelOpacity
         visible: opacity > 0.01
 
-        Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
-        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.InOutCubic } }
+        Behavior on x { NumberAnimation { duration: 850; easing.type: Easing.InOutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 700; easing.type: Easing.InOutCubic } }
 
         readonly property int panelRadius: 24
 
