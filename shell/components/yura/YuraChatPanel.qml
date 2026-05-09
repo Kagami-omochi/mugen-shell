@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
 import "../content" as Content
@@ -78,20 +79,31 @@ PanelWindow {
         Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
         Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.InOutCubic } }
 
+        readonly property int panelRadius: 24
+
+        layer.enabled: true
+        layer.smooth: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: chatBox.width
+                height: chatBox.height
+                radius: chatBox.panelRadius
+            }
+        }
+
         UI.MugenSurface {
             anchors.fill: parent
             theme: chatWindow.theme
             gradientEnabled: chatWindow.settingsManager
                 ? chatWindow.settingsManager.barGradientEnabled
                 : true
-            radius: 24
+            radius: chatBox.panelRadius
         }
 
         Loader {
             id: contentLoader
             anchors.fill: parent
             anchors.margins: 1
-            clip: true
             asynchronous: true
 
             property bool everLoaded: false

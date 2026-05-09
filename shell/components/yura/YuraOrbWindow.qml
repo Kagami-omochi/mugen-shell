@@ -19,7 +19,7 @@ PanelWindow {
     }
 
     exclusiveZone: 0
-    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     mask: Region {
