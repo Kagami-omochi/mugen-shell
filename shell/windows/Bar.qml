@@ -128,11 +128,6 @@ PanelWindow {
         }
     }
 
-    property alias theme: theme
-    property alias icons: icons
-    property alias settingsManager: settingsManager
-    property alias aiBackend: aiBackend
-
     Theme.ModeManager { id: modeManager; screenWidth: barWindow.width }
 
     Theme.Colors { id: theme }
