@@ -11,7 +11,7 @@ QtObject {
 
     readonly property bool isLeft: panelSide !== "right"
 
-    property int panelWidth: 520
+    property int panelWidth: 620
     property int panelHeight: 640
     property int panelMargin: 16
 
