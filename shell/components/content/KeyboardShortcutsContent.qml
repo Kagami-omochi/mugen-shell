@@ -32,7 +32,7 @@ Item {
                 { keys: "Super+,", desc: "Settings" },
                 { keys: "Super+Shift+T", desc: "Timer" },
                 { keys: "Super+Shift+A", desc: "Yura (floating window)" },
-                { keys: "Super+Y", desc: "Yura (corner orb)" },
+                { keys: "Super+Y", desc: "Yura (corner pop-up)" },
                 { keys: "Super+/", desc: "This shortcuts panel" },
                 { keys: "Super+Return", desc: "Terminal" },
                 { keys: "Super+B", desc: "Browser" },
@@ -113,7 +113,7 @@ Item {
                 { keys: "Home / End", desc: "Jump to start / end of response" },
                 { keys: "Ctrl+C / Ctrl+A", desc: "Copy / select all of the response" },
                 { keys: "Type a letter", desc: "Discard the response and start a new question" },
-                { keys: "Click the orb", desc: "Detach into the floating window" },
+                { keys: "Click the icon", desc: "Detach into the corner pop-up" },
             ]
         },
         {
