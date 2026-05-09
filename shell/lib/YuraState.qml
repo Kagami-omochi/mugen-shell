@@ -16,8 +16,14 @@ QtObject {
     property int panelMargin: 16
 
     property int orbCollapsedSize: 56
-    property int orbExpandedSize: 56
-    property int orbHeaderInset: 16
+
+    property int sidebarWidth: 200
+    property bool sidebarCollapsed: false
+
+    readonly property int mainPaneWidth: panelWidth - (sidebarCollapsed ? 0 : sidebarWidth)
+    readonly property int mainPaneHeight: panelHeight
+
+    readonly property real orbExpandedSize: Math.min(mainPaneWidth, mainPaneHeight) * 0.28
 
     readonly property int panelRestX: isLeft
         ? panelMargin
@@ -32,8 +38,10 @@ QtObject {
         : screenWidth - orbCollapsedSize - panelMargin
     readonly property real orbRestY: screenHeight - orbCollapsedSize - panelMargin
 
-    readonly property real orbActiveX: panelRestX + panelWidth / 2 - orbExpandedSize / 2
-    readonly property real orbActiveY: panelRestY + orbHeaderInset
+    readonly property real orbActiveX: isLeft
+        ? panelRestX + (sidebarCollapsed ? 0 : sidebarWidth) + (mainPaneWidth - orbExpandedSize) / 2
+        : panelRestX + (mainPaneWidth - orbExpandedSize) / 2
+    readonly property real orbActiveY: panelRestY + mainPaneHeight * 0.18
 
     readonly property real orbX: expanded ? orbActiveX : orbRestX
     readonly property real orbY: expanded ? orbActiveY : orbRestY

@@ -111,6 +111,7 @@ PanelWindow {
             onLoaded: everLoaded = true
 
             sourceComponent: Content.AiAssistantFloatingContent {
+                id: aiContent
                 anchors.fill: parent
                 modeManager: stubModeManager
                 theme: chatWindow.theme
@@ -118,7 +119,7 @@ PanelWindow {
                 aiBackend: chatWindow.aiBackend
                 settingsManager: chatWindow.settingsManager
                 showInternalOrb: false
-                Component.onCompleted: sidebarCollapsed = true
+                onSidebarCollapsedChanged: yuraState.sidebarCollapsed = sidebarCollapsed
             }
         }
 
