@@ -119,8 +119,8 @@ PanelWindow {
                 aiBackend: chatWindow.aiBackend
                 settingsManager: chatWindow.settingsManager
                 showInternalOrb: false
-                orbEmptyScale: 0.40
-                orbActiveBase: 56
+                orbEmptyScale: 0.48
+                orbActiveBase: 68
                 onSidebarCollapsedChanged: yuraState.sidebarCollapsed = sidebarCollapsed
             }
         }
