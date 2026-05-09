@@ -22,6 +22,14 @@ PanelWindow {
         ? hyprMonitor.activeWorkspace.hasFullscreen
         : false
 
+    onFullscreenActiveChanged: {
+        if (!fullscreenActive && !yuraState.expanded) {
+            orbWindow.visible = true
+            orb.restOpacity = 1
+            scheduleHide()
+        }
+    }
+
     anchors {
         top: true
         bottom: true
