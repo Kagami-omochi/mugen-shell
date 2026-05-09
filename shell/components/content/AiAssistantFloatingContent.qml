@@ -133,6 +133,21 @@ FocusScope {
         loadCurrentProcess.running = true
     }
 
+    Timer {
+        id: syncPollTimer
+        interval: 3000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (root.streaming) return
+            if (listConvProcess.running || loadCurrentProcess.running) return
+            root.refreshConversations()
+            if (root.currentConvId !== 0) {
+                root.loadCurrentConversation()
+            }
+        }
+    }
+
     // Split on ``` — even parts are markdown prose, odd parts are code
     // blocks. An unclosed ``` mid-stream still renders as a code block so
     // partial code shows up immediately.
