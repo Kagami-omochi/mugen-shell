@@ -138,7 +138,10 @@ PanelWindow {
             orbColor: orbWindow.theme ? orbWindow.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.9)
             showHalo: false
             coreOpacity: 0.6
-            active: orbWindow.visible
+            // Stop the pulse the moment we start hiding (fullscreen kicks in
+            // or panel collapses) so the orb fades out cleanly instead of
+            // visibly throbbing on the way down.
+            active: orbWindow.visible && !(orbWindow.fullscreenActive && !yuraState.expanded)
         }
 
         MouseArea {
