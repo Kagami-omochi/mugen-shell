@@ -76,7 +76,6 @@ PanelWindow {
             Content.AiAssistantFloatingContent {
                 id: aiContent
                 anchors.fill: parent
-                anchors.topMargin: yuraState.orbExpandedSize + 24
                 modeManager: stubModeManager
                 theme: chatWindow.theme
                 icons: chatWindow.icons

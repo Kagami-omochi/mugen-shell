@@ -29,12 +29,17 @@ PanelWindow {
         height: orb.height
     }
 
-    Component.onCompleted: {
+    function syncScreenSize() {
         if (orbWindow.screen) {
             yuraState.screenWidth = orbWindow.screen.width
             yuraState.screenHeight = orbWindow.screen.height
         }
     }
+
+    Component.onCompleted: syncScreenSize()
+    onScreenChanged: syncScreenSize()
+    onWidthChanged: syncScreenSize()
+    onHeightChanged: syncScreenSize()
 
     Item {
         id: orb
