@@ -50,6 +50,7 @@ func (o *OpenAI) Models(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", "mugen-ai/0.1")
 	if o.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+o.apiKey)
 	}
@@ -91,6 +92,7 @@ func (o *OpenAI) Chat(ctx context.Context, model string, messages []Message, fn 
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "mugen-ai/0.1")
 	if o.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+o.apiKey)
 	}

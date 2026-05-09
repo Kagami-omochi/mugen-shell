@@ -104,6 +104,18 @@ NixOS users go through the umbrella flake at `?dir=nixos`. It enables `programs.
 
 Then `nixos-rebuild switch --flake /etc/nixos#mybox`.
 
+#### Japanese (or other) input via fcitx5
+
+The module exposes a `fcitx5Addons` option that wires up `i18n.inputMethod` so the GTK / Qt / SDL env vars get set system-wide (installing fcitx5 directly into systemPackages does **not** do this on NixOS — that's the trap most people fall into):
+
+```nix
+programs.mugen-shell.fcitx5Addons = with pkgs; [ fcitx5-mozc ];
+# or:  [ fcitx5-rime ]    for Chinese
+# or:  [ fcitx5-hangul ]  for Korean
+```
+
+Default is `[]` → no IME. The `source = ime.conf` line in `hyprland.conf` is harmless either way (Hyprland just exports the same env vars a second time).
+
 ### Path B — Arch / Garuda / any non-NixOS Linux + Nix
 
 If you have Nix with flakes enabled but you're not on NixOS, point at the user-level flake (the repo root) and let pacman handle the Wayland / compositor stack:
@@ -162,6 +174,15 @@ yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
 (Set `includeSystemDeps = true` if you'd rather pull all of that into Nix — useful when the distro doesn't package something or you want a hermetic install.)
 
 You still wire Hyprland into your display manager / login session yourself (`Hyprland` from TTY, sddm session entry, etc.).
+
+A couple of Arch-specific gotchas the NixOS module handles automatically:
+
+- **`hyprlock` PAM file** — Arch ships none by default, so `hyprlock` will refuse to unlock your screen. Drop the upstream sample into `/etc/pam.d/hyprlock`:
+  ```bash
+  sudo curl -fsSL https://raw.githubusercontent.com/hyprwm/hyprlock/main/pam/hyprlock \
+    -o /etc/pam.d/hyprlock
+  ```
+- **fcitx5 env vars** — `fcitx5` itself doesn't export `GTK_IM_MODULE` / `QT_IM_MODULE` / `XMODIFIERS` for you. The shipped `system/hypr/configs/ime.conf` covers Hyprland sessions, but for non-Hyprland processes (login shells, GUI apps started outside the compositor) put the same vars in `/etc/environment`.
 
 ### Path C — Pure manual (no Nix at all)
 

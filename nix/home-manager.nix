@@ -65,10 +65,8 @@ in
       lib.optionals cfg.includeSystemDeps (
         with pkgs;
         [
-          hyprland
           quickshell
           hypridle
-          hyprlock
           mpvpaper
           awww
           matugen
@@ -82,15 +80,12 @@ in
           ffmpeg
           imv
           pavucontrol
-          pulseaudio # paplay
-          pamixer    # volume mute keybind in keybinds.conf
-          socat      # mpvpaper IPC in change-wallpaper.sh
-          curl       # AI assistant HTTP / SSE in AiAssistantContent.qml
-          fastfetch  # terminal welcome; system/fastfetch/config.jsonc references it
-          fcitx5     # IME framework; users add engines (fcitx5-mozc, etc.) as needed
+          pamixer
+          socat
+          curl
+          fastfetch
           python3
-          # Default user apps referenced by hyprland.conf $terminal/$fileManager/$browser.
-          # Override via your own home.packages if you prefer alacritty/nautilus/chromium etc.
+          # $terminal/$fileManager/$browser defaults; override via home.packages.
           kitty
           thunar
           firefox
