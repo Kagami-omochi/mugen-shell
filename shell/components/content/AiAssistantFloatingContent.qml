@@ -17,15 +17,10 @@ FocusScope {
     property var settingsManager
     property bool showInternalOrb: true
 
-    // Orb sizing knobs so external owners (Yura) can scale up without
-    // editing the empty-state formula or the active-state base width.
-    property real orbEmptyScale: 0.28      // ratio of min(mainPane.w, h)
-    property real orbActiveBase: 36        // base px (then modeManager.scale'd)
-    property real orbEmptyYRatio: 0.18     // orb top from mainPane top, as ratio of mainPane height
+    property real orbEmptyScale: 0.28
+    property real orbActiveBase: 36
+    property real orbEmptyYRatio: 0.18
 
-    // Orb position / size mirrored from the internal Item, expressed in
-    // root coordinates (mainPane.x + orb.x). Lets a separate global orb
-    // window track the same morph an external client (e.g. Yura) needs.
     readonly property real orbExternalX: orb.x + mainPane.x
     readonly property real orbExternalY: orb.y + mainPane.y
     readonly property real orbExternalSize: orb.width
@@ -430,10 +425,6 @@ FocusScope {
         property real activeY: 0
         property bool activePosReady: false
 
-        // Latch: once we've successfully positioned in active state, stay
-        // out of empty state even if a delegate goes momentarily null
-        // (happens during streaming as ListView re-layouts). Resets when
-        // messages clear (new conversation).
         property bool _activePosEverReady: false
         onActivePosReadyChanged: if (activePosReady) _activePosEverReady = true
 
@@ -460,9 +451,6 @@ FocusScope {
             }
             activeX = activeOverlay.x
             let rawY = activeOverlay.y + item.y - chatList.contentY + item.height - modeManager.scale(40)
-            // Clamp inside activeOverlay so a scrolled-off latest message
-            // can't drag the orb past the panel bottom (Yura's orb lives on
-            // a separate fullscreen window and would leak out otherwise).
             let minY = activeOverlay.y
             let maxY = activeOverlay.y + activeOverlay.height - orb.activeSize
             activeY = Math.max(minY, Math.min(rawY, maxY))
@@ -474,9 +462,6 @@ FocusScope {
         width: isInEmptyState ? emptySize : activeSize
         height: width
 
-        // External consumers (Yura) animate the orb in their own window
-        // and watch orbExternalX/Y/Size as the source of truth — running
-        // a Behavior here too would just stack a 900ms lag on top.
         Behavior on x {
             enabled: root.showInternalOrb && !chatList.moving && !chatList.flicking
             NumberAnimation { duration: 900; easing.type: Easing.InOutCubic }

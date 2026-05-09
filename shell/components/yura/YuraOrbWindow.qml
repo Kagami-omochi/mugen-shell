@@ -59,10 +59,6 @@ PanelWindow {
     onWidthChanged: syncScreenSize()
     onHeightChanged: syncScreenSize()
 
-    // Show the orb at session start so the user gets a "hi, I'm here"
-    // moment, then run the same rest-then-unmap path a normal close
-    // would take. yuraOrbRestSeconds === 0 means "stay forever", so we
-    // keep it visible without scheduling a hide.
     Component.onCompleted: {
         orbWindow.visible = true
         scheduleHide()
@@ -76,11 +72,6 @@ PanelWindow {
         hideTimer.restart()
     }
 
-    // Rest behaviour: keep the orb visible (and animating) for 5 seconds
-    // after the panel collapses, then fade it out and unmap the surface
-    // so the compositor isn't asked to manage a transparent fullscreen
-    // layer for an idle orb. Toggling open inside that 5s window stops
-    // the timer immediately.
     Timer {
         id: hideTimer
         interval: orbWindow.settingsManager
@@ -102,8 +93,6 @@ PanelWindow {
         }
     }
 
-    // If the user flips the rest setting to "Always" while the orb is
-    // mid-fade or already hidden, bring it back and stop the timer.
     Connections {
         target: orbWindow.settingsManager
         ignoreUnknownSignals: true
@@ -149,9 +138,6 @@ PanelWindow {
             orbColor: orbWindow.theme ? orbWindow.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.9)
             showHalo: false
             coreOpacity: 0.6
-            // Stop the pulse the moment we start hiding (fullscreen kicks in
-            // or panel collapses) so the orb fades out cleanly instead of
-            // visibly throbbing on the way down.
             active: orbWindow.visible && !(orbWindow.fullscreenActive && !yuraState.expanded)
         }
 

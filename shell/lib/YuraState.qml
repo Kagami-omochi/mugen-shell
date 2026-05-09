@@ -25,9 +25,6 @@ QtObject {
     readonly property int mainPaneWidth: panelWidth - (sidebarCollapsed ? 0 : sidebarWidth)
     readonly property int mainPaneHeight: panelHeight
 
-    // AI-content-driven orb target. <0 means fall back to the empty-state
-    // geometry below (useful before the chat content has loaded or while
-    // the panel is collapsed and the AI tree hasn't been instantiated).
     property real aiOrbX: -1
     property real aiOrbY: -1
     property real aiOrbSize: -1

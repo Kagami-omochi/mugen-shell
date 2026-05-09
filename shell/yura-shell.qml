@@ -1,10 +1,3 @@
-// Standalone Quickshell entry for the Yura assistant (orb + chat panel).
-//
-// Runs as a separate quickshell process so its layer-shell windows,
-// orb animations, and chat tree don't share an event loop with the bar.
-// Auto-started by hyprland.conf; toggle via:
-//   qs -p $HOME/.config/quickshell/mugen-shell/yura-shell.qml ipc call yura toggle
-
 //@ pragma UseQApplication
 
 import QtQuick
