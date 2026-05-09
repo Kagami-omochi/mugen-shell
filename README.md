@@ -38,12 +38,12 @@ Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + 
 Built and enabled automatically on any install path (NixOS, Arch + Nix, or pure manual `make install` — see [SETUP.md](SETUP.md)).
 
 - Spotlight-style one-row prompt in the bar — Yura icon + input pill, response streams into the placeholder, navigable read-only after streaming, clicking the icon detaches into the corner panel
-- Corner-popup panel (left or right, configurable) running in its own quickshell process so the bar stays responsive even while a long answer streams; sidebar of past conversations, dream-styled cosmic gradient + drifting particles, ambient breathing presence that morphs from centre-top of the empty state to chase the latest reply
-- Cross-process state push: bar / panel / SSE-driven `/events` channel keep conversation lists and message bodies in sync the moment any one client mutates them
-- SQLite-persisted multi-conversation history (`~/.local/state/mugen-ai/history.db`) — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you actually send something
+- Corner pop-up panel (left or right, configurable); sidebar of past conversations, dream-styled cosmic gradient + drifting particles, ambient breathing presence that drifts from the centre of the empty state to follow the latest reply
+- The bar row and the corner pop-up stay in sync — send a message in one and it shows up in the other instantly
+- Multi-conversation history persisted on disk — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you actually send something
 - Per-conversation model binding — each chat stays on the provider it was started with; the panel dropdown locks to read-only mid-conversation, and a Settings entry pins the bar's model
 - Markdown rendering for assistant replies, with monospace code blocks that have their own hover-reveal copy button
-- Streaming SSE responses with stop button, BlobEffect breathing indicator, IME-aware placeholder
+- Streaming responses with a stop button, a breathing indicator, and an IME-aware placeholder
 - Configurable personality and real-time context injection (date/time, weather)
 
 Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → Configuring mugen-ai](SETUP.md#configuring-mugen-ai).
