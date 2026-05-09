@@ -32,7 +32,7 @@ Item {
                 { keys: "Super+,", desc: "Settings" },
                 { keys: "Super+Shift+T", desc: "Timer" },
                 { keys: "Super+Shift+A", desc: "Yura (floating window)" },
-                { keys: "Super+Shift+Y", desc: "Yura (corner orb)" },
+                { keys: "Super+Y", desc: "Yura (corner orb)" },
                 { keys: "Super+/", desc: "This shortcuts panel" },
                 { keys: "Super+Return", desc: "Terminal" },
                 { keys: "Super+B", desc: "Browser" },
