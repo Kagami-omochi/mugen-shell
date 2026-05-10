@@ -413,9 +413,3 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 - [playerctl](https://github.com/altdesktop/playerctl) — Media player control
 - [grim](https://sr.ht/~emersion/grim/) / [slurp](https://github.com/emersion/slurp) — Screenshot tools
 - [cliphist](https://github.com/sentriz/cliphist) — Clipboard history
-
----
-
-## License
-
-MIT License

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="shell/assets/branding/mugen-shell_logo.png" width="120" alt="mugen-shell logo" />
+  <img src="shell/assets/branding/mugen-shell_logo.png" width="200" alt="mugen-shell logo" />
 </p>
 
 <h1 align="center">mugen-shell</h1>
@@ -59,58 +59,23 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 ## Features
 
 - Wallpaper-driven Material You color scheme via Matugen
-- Video and image wallpaper switching (mpvpaper + awww)
-- Wallpaper picker UI
-- Music player integration (playerctl / MPRIS) with YouTube thumbnail fallback and a seekable glowing progress slider
+- Video and image wallpaper switching (mpvpaper + awww) with a wallpaper picker UI
 - Cava audio visualizer
-- Notification center
-- Calendar in a standalone night-sky window — month grid + events list, inline add / edit modal, today ring, event dots
-- Countdown Timer (`Super + Shift + T`) with preset durations, free-form M:SS input, full keyboard control, glowing progress ring, configurable completion sound, and a live remaining-time pill in the bar
-- Configurable bar date format (Qt date tokens, e.g. `ddd M/d`, `yyyy-MM-dd`)
-- Settings can detach into a standalone floating window, kept in sync with the bar
-- Clipboard history (`Super + V`) with item limit
+- Calendar in a standalone night-sky window — month grid, events list, inline add / edit, today ring
+- Countdown timer with preset durations, free-form M:SS input, glowing progress ring, and a live remaining-time pill in the bar
+- Music player integration (playerctl / MPRIS) with YouTube thumbnail fallback and a seekable glowing progress slider
+- Clipboard history and notification center
+- Speaker / microphone control sharing the volume panel with a swap toggle
 - WiFi / Bluetooth / IME management
-- Speaker / microphone control sharing the volume panel (`Super + U`) with a swap toggle
-- System Tray (collapsible)
-- Battery indicator (water-level fill inside the power menu icon, opt-in)
-- Idle inhibitor toggle
-- App Launcher (`Super + R`)
-- Screenshot capture with clipboard copy (`Super + F12`)
-- Screenshot gallery
-- Power menu
-- In-shell settings panel covering theme, blur, animations, notification + timer sounds, lock timer, date format, and Yura's bar model + panel side
+- Battery indicator (water-level fill inside the power menu icon, opt-in) and a collapsible system tray
+- App launcher, idle inhibitor toggle, screenshot capture with clipboard copy, screenshot gallery, power menu
+- In-shell settings panel — theme, blur, animations, notification + timer sounds, lock timer, date format, Yura's bar model and panel side; can detach into a standalone window kept in sync with the bar
 
 ---
 
 ## Usage
 
-Once installed (see [SETUP.md](SETUP.md)), the bar starts automatically with the Hyprland session.
-
-Most-used panels:
-
-| Key | Action |
-|---|---|
-| `Super + R` | App launcher |
-| `Super + W` | Wallpaper picker |
-| `Super + M` | Music player |
-| `Super + U` | Volume / mic control |
-| `Super + V` | Clipboard history |
-| `Super + T` | Notification center |
-| `Super + Y` | Yura (bar) |
-| `Super + Shift + Y` | Yura (corner pop-up) |
-| `Super + C` | Calendar |
-| `Super + Shift + T` | Timer |
-| `Super + I` | WiFi |
-| `Super + E` | Bluetooth |
-| `Super + S` | Screenshot gallery |
-| `Super + P` | Power menu |
-| `Super + ,` | Settings |
-| `Super + /` | Keyboard shortcuts reference |
-| `Super + hjkl` | Move focus between windows (vim-style) |
-| `Super + Shift + hjkl` | Move window in tile (vim-style) |
-| `Super + Shift + Space` | Toggle floating |
-
-Right-click the power menu icon to jump straight into settings. Click the chevron next to the notification icon to expand the system tray. Full keybind list lives in [SETUP.md](SETUP.md).
+Once installed (see [SETUP.md](SETUP.md)), the bar starts automatically with the Hyprland session. Press `Super + /` for the in-shell shortcuts panel, right-click the power menu icon to jump straight into Settings, or click the chevron next to the notification icon to expand the system tray. The full keybind list lives in [SETUP.md → Keybindings](SETUP.md#keybindings).
 
 ---
 
