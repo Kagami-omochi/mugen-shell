@@ -273,8 +273,8 @@ FocusScope {
                 label: "Settings"
                 color: Qt.rgba(0.72, 0.72, 0.82, 1.0)
                 onClicked: {
-                    root.resetAutoCloseTimer()
-                    modeManager.switchMode("settings", true)
+                    if (modeManager) modeManager.closeAllModes()
+                    Hyprland.dispatch("exec ~/.config/quickshell/mugen-shell/scripts/toggle-settings.sh")
                 }
             }
         }

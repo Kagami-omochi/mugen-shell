@@ -26,7 +26,7 @@ mugen-shell/
 │   ├── settings.default.json # OSS-friendly defaults
 │   ├── shell.qml             # Main Quickshell entry (bar + notifications)
 │   ├── yura-shell.qml        # Standalone Quickshell entry for Yura (separate process)
-│   └── settings-shell.qml    # Standalone Settings window (detach target)
+│   └── settings-shell.qml    # Standalone Settings window
 ├── ai/                       # mugen-ai Go backend
 │   ├── cmd/                  # CLI subcommands (chat, serve)
 │   ├── internal/             # Provider registry, server (HTTP + SSE /events), history, ...
@@ -356,10 +356,9 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **WallpaperContent** - Wallpaper management UI
 - **PowerMenuContent** - Power menu
 - **ScreenshotGalleryContent** - Screenshot gallery
-- **SettingsContent** - Settings panel (rows in `settings/`)
 - **CalendarFloatingContent** - Standalone two-pane Calendar window with SQLite-backed events (opens in its own window via Super + C)
 - **TimerContent** - Countdown timer UI (idle / running, ring + presets, keyboard control)
-- **SettingsFloatingContent** - Standalone scrolling Settings window (detach target)
+- **SettingsFloatingContent** - Standalone scrolling Settings window (rows in `settings/`)
 - **AiAssistantContent** - Bar Spotlight row (Super+A)
 - **AiAssistantFloatingContent** - Chat tree mounted inside the Yura corner panel — sidebar, message list, model dropdown, internal Yura indicator
 

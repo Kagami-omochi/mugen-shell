@@ -682,26 +682,6 @@ PanelWindow {
     }
 
     Loader {
-        id: settingsLoader
-        anchors.fill: parent
-        z: 2
-        property var modeManagerRef: modeManager
-        property var themeRef: theme
-        property var iconsRef: icons
-        property var settingsManagerRef: settingsManager
-        active: modeManagerRef.isMode("settings")
-        sourceComponent: Content.SettingsContent {
-            anchors.fill: parent
-            visible: settingsLoader.modeManagerRef.isMode("settings")
-            modeManager: settingsLoader.modeManagerRef
-            theme: settingsLoader.themeRef
-            icons: settingsLoader.iconsRef
-            settingsManager: settingsLoader.settingsManagerRef
-        }
-    }
-
-
-    Loader {
         id: screenshotGalleryLoader
         anchors.fill: parent
         z: 2

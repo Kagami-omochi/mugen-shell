@@ -17,7 +17,6 @@ Available modes:
   clipboard           Open clipboard history
   wifi                Open WiFi panel
   bluetooth           Open Bluetooth panel
-  settings            Open settings panel
   screenshot-gallery  Open screenshot gallery
   timer               Open countdown timer
   brightness          Open brightness panel

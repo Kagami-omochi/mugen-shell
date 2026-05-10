@@ -78,6 +78,7 @@ ShellRoot {
             settingsManager.saveSettings()
         }
         if (name !== "None") {
+            previewSoundProcess.running = false
             previewSoundProcess.command = [
                 "paplay",
                 root.soundsDir + "/" + name
@@ -92,6 +93,7 @@ ShellRoot {
             settingsManager.saveSettings()
         }
         if (name !== "None") {
+            previewSoundProcess.running = false
             previewSoundProcess.command = [
                 "paplay",
                 root.timerSoundsDir + "/" + name
@@ -107,6 +109,30 @@ ShellRoot {
             String(minutes)
         ]
         applyLockTimerProcess.running = true
+    }
+
+    function openAiConfig() {
+        let cfgHome = Quickshell.env("XDG_CONFIG_HOME")
+        if (!cfgHome || cfgHome === "") cfgHome = Quickshell.env("HOME") + "/.config"
+        openAiConfigProcess.command = ["xdg-open", cfgHome + "/mugen-ai/config.toml"]
+        openAiConfigProcess.running = true
+    }
+
+    function restartAi() {
+        restartAiProcess.command = ["systemctl", "--user", "restart", "mugen-ai.service"]
+        restartAiProcess.running = true
+    }
+
+    Process {
+        id: openAiConfigProcess
+        command: []
+        running: false
+    }
+
+    Process {
+        id: restartAiProcess
+        command: []
+        running: false
     }
 
     Process {
@@ -237,6 +263,8 @@ ShellRoot {
             onApplyPreset: name => root.applyBlurPreset(name)
             onApplySound: name => root.applyNotificationSound(name)
             onApplyTimerSound: name => root.applyTimerSound(name)
+            onEditAiConfig: root.openAiConfig()
+            onRestartAi: root.restartAi()
         }
     }
 

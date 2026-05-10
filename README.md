@@ -69,7 +69,7 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 - WiFi / Bluetooth / IME management
 - Battery indicator (water-level fill inside the power menu icon, opt-in) and a collapsible system tray
 - App launcher, idle inhibitor toggle, screenshot capture with clipboard copy, screenshot gallery, power menu
-- In-shell settings panel — theme, blur, animations, notification + timer sounds, lock timer, date format, Yura's bar model and panel side; can detach into a standalone window kept in sync with the bar
+- Standalone settings window — theme, blur, animations, notification + timer sounds, lock timer, date format, Yura's bar model and panel side
 
 ---
 

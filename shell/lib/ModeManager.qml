@@ -203,7 +203,6 @@ QtObject {
             "volume": true,
             "wifi": true,
             "bluetooth": true,
-            "settings": true,
             "screenshot-gallery": true,
             "clipboard": true,
             "ai": true,

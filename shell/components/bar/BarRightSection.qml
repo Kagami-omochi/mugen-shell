@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 import "../ui" as UI
 import "../common" as Common
 import "./right" as Right
@@ -111,9 +112,8 @@ RowLayout {
             }
         }
         onRightClicked: {
-            if (root.modeManager) {
-                root.modeManager.switchMode("settings")
-            }
+            if (root.modeManager) root.modeManager.closeAllModes()
+            Hyprland.dispatch("exec ~/.config/quickshell/mugen-shell/scripts/toggle-settings.sh")
         }
     }
 }
