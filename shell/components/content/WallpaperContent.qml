@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import Quickshell.Io
 import "../common" as Common
 
 FocusScope {
@@ -73,13 +74,27 @@ FocusScope {
         }
     }
 
+    readonly property var listModel: ["__add__"].concat(wallpaperManager.wallpapers || [])
+
+    function openWallpaperFolder() {
+        openWallpaperDirProcess.running = false
+        openWallpaperDirProcess.command = ["xdg-open", wallpaperManager.wallpaperDir]
+        openWallpaperDirProcess.running = true
+    }
+
+    Process {
+        id: openWallpaperDirProcess
+        command: []
+        running: false
+    }
+
     function updateFocusToCurrentWallpaper() {
         if (wallpaperManager.wallpapers.length > 0 && wallpaperManager.currentWallpaperPath.length > 0) {
             Qt.callLater(function() {
-                let index = 0
+                let index = 1
                 for (let i = 0; i < wallpaperManager.wallpapers.length; i++) {
                     if (wallpaperManager.wallpapers[i] === wallpaperManager.currentWallpaperPath) {
-                        index = i
+                        index = i + 1
                         break
                     }
                 }
@@ -150,7 +165,7 @@ FocusScope {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                model: wallpaperManager.wallpapers
+                model: root.listModel
                 orientation: ListView.Horizontal
                 spacing: modeManager.scale(16)
                 clip: true
@@ -169,8 +184,10 @@ FocusScope {
                         modeManager.closeAllModes()
                         event.accepted = true
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        if (currentIndex >= 0) {
-                            root.setWallpaper(wallpaperManager.wallpapers[currentIndex])
+                        if (currentIndex === 0) {
+                            root.openWallpaperFolder()
+                        } else if (currentIndex >= 1) {
+                            root.setWallpaper(wallpaperManager.wallpapers[currentIndex - 1])
                         }
                         event.accepted = true
                     } else if (event.key === Qt.Key_Left) {
@@ -250,11 +267,13 @@ FocusScope {
                 }
 
                 delegate: Item {
+                    id: cellRoot
                     width: modeManager.scale(240)
                     height: listView.height
 
                     property bool isCurrent: ListView.isCurrentItem
-                    property string wallpaperPath: modelData
+                    property bool isAddCell: modelData === "__add__"
+                    property string wallpaperPath: isAddCell ? "" : modelData
 
                     Rectangle {
                         anchors.fill: parent
@@ -262,46 +281,73 @@ FocusScope {
                         color: "transparent"
                         radius: modeManager.scale(18)
 
-                        scale: isCurrent ? 1.0 : 0.75
-                        opacity: isCurrent ? 1.0 : 0.7
+                        scale: cellRoot.isCurrent ? 1.0 : 0.75
+                        opacity: cellRoot.isCurrent ? 1.0 : 0.7
 
-                        Behavior on scale {
-                            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                        }
-
-                        Behavior on opacity {
-                            NumberAnimation { duration: 200 }
-                        }
+                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
 
                         Rectangle {
                             anchors.fill: parent
                             anchors.margins: modeManager.scale(4)
                             color: root.theme ? root.theme.surfaceGlass : Qt.rgba(0.15, 0.15, 0.20, 0.5)
                             radius: modeManager.scale(18)
-                            visible: thumb.status === Image.Loading || thumb.status === Image.Null
+                            border.width: cellRoot.isAddCell ? modeManager.scale(2) : 0
+                            border.color: root.theme
+                                ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.45)
+                                : Qt.rgba(0.65, 0.55, 0.85, 0.45)
+                            visible: cellRoot.isAddCell || thumb.status === Image.Loading || thumb.status === Image.Null
+
+                            Canvas {
+                                id: plusCanvas
+                                anchors.centerIn: parent
+                                width: modeManager.scale(56)
+                                height: modeManager.scale(56)
+                                visible: cellRoot.isAddCell
+
+                                property color strokeColor: root.theme
+                                    ? root.theme.accent
+                                    : Qt.rgba(0.65, 0.55, 0.85, 1.0)
+
+                                onStrokeColorChanged: requestPaint()
+                                onWidthChanged: requestPaint()
+                                Component.onCompleted: requestPaint()
+
+                                onPaint: {
+                                    let ctx = getContext("2d")
+                                    ctx.reset()
+                                    let cx = width / 2
+                                    let cy = height / 2
+                                    let arm = width * 0.42
+                                    ctx.lineWidth = width * 0.07
+                                    ctx.lineCap = "round"
+                                    ctx.strokeStyle = strokeColor
+                                    ctx.beginPath()
+                                    ctx.moveTo(cx - arm, cy)
+                                    ctx.lineTo(cx + arm, cy)
+                                    ctx.moveTo(cx, cy - arm)
+                                    ctx.lineTo(cx, cy + arm)
+                                    ctx.stroke()
+                                }
+                            }
                         }
 
                         Image {
                             id: thumb
                             anchors.fill: parent
                             anchors.margins: modeManager.scale(4)
-                            source: "file://" + wallpaperManager.getThumbnailPath(wallpaperPath)
+                            source: cellRoot.isAddCell ? "" : "file://" + wallpaperManager.getThumbnailPath(cellRoot.wallpaperPath)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             smooth: true
                             cache: false
                             visible: false
-
-                            Component.onCompleted: {
-                            }
-
-                            onStatusChanged: {
-                            }
                         }
 
                         OpacityMask {
                             anchors.fill: thumb
                             source: thumb
+                            visible: !cellRoot.isAddCell
                             maskSource: Rectangle {
                                 width: thumb.width
                                 height: thumb.height
@@ -317,7 +363,7 @@ FocusScope {
                             height: modeManager.scale(24)
                             radius: modeManager.scale(12)
                             color: Qt.rgba(0, 0, 0, 0.7)
-                            visible: wallpaperManager.isVideoFile(wallpaperPath)
+                            visible: !cellRoot.isAddCell && wallpaperManager.isVideoFile(cellRoot.wallpaperPath)
 
                             Text {
                                 anchors.centerIn: parent
@@ -330,7 +376,7 @@ FocusScope {
                         Rectangle {
                             anchors.fill: parent
                             color: "transparent"
-                            border.width: isCurrent ? modeManager.scale(2) : 0
+                            border.width: cellRoot.isCurrent && !cellRoot.isAddCell ? modeManager.scale(2) : 0
                             border.color: root.theme ? root.theme.accent : Qt.rgba(0.65, 0.55, 0.85, 0.9)
                             radius: modeManager.scale(18)
                         }
@@ -340,7 +386,11 @@ FocusScope {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 listView.currentIndex = index
-                                root.setWallpaper(wallpaperPath)
+                                if (cellRoot.isAddCell) {
+                                    root.openWallpaperFolder()
+                                } else {
+                                    root.setWallpaper(cellRoot.wallpaperPath)
+                                }
                                 root.resetAutoCloseTimer()
                             }
                         }
