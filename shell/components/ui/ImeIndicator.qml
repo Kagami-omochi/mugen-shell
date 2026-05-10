@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Item {
     id: root
@@ -15,6 +16,11 @@ Item {
     }
 
     signal clicked()
+
+    property Process toggleProcess: Process {
+        command: ["fcitx5-remote", "-t"]
+        running: false
+    }
 
     implicitWidth: scaled(23)
     implicitHeight: scaled(23)
@@ -113,7 +119,10 @@ Item {
             root.hovered = false
             root.hoverScale = 1.0
         }
-        onClicked: root.clicked()
+        onClicked: {
+            root.toggleProcess.running = true
+            root.clicked()
+        }
     }
 
     Component.onCompleted: {
