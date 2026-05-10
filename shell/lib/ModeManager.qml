@@ -207,7 +207,8 @@ QtObject {
             "screenshot-gallery": true,
             "clipboard": true,
             "ai": true,
-            "timer": true
+            "timer": true,
+            "brightness": true
         }
 
         function safeSwitch(modeName) {

@@ -84,6 +84,14 @@ Item {
             ]
         },
         {
+            name: "Brightness",
+            rows: [
+                { keys: "↑↓", desc: "Adjust ±2%" },
+                { keys: "Shift+↑↓", desc: "Adjust ±10%" },
+                { keys: "Brightness keys", desc: "Adjust ±5% (laptop)" },
+            ]
+        },
+        {
             name: "WiFi",
             rows: [
                 { keys: "↑↓ / jk", desc: "Navigate networks" },

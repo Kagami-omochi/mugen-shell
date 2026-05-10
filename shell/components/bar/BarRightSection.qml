@@ -37,6 +37,7 @@ RowLayout {
     property var batteryManager
     property var imeStatus
     property var idleInhibitorManager
+    property var brightnessManager
     property var settingsManager
 
     UI.Tray {
@@ -69,6 +70,13 @@ RowLayout {
         modeManager: root.modeManager
         idleInhibitorManager: root.idleInhibitorManager
         spacing: root.spacing
+    }
+
+    Right.BrightnessIndicator {
+        theme: root.theme
+        typo: root.typo
+        modeManager: root.modeManager
+        brightnessManager: root.brightnessManager
     }
 
     Separator {}

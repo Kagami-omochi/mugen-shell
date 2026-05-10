@@ -20,6 +20,7 @@ Available modes:
   settings            Open settings panel
   screenshot-gallery  Open screenshot gallery
   timer               Open countdown timer
+  brightness          Open brightness panel
   close               Close all modules
 
 Examples:

@@ -79,6 +79,20 @@ PanelWindow {
                 }
             }
 
+            if (modeManager.isMode("brightness") && brightnessManager) {
+                let step = (event.modifiers & Qt.ShiftModifier) ? 10 : 2
+                if (event.key === Qt.Key_Up || event.key === Qt.Key_Right) {
+                    brightnessManager.bump(step)
+                    event.accepted = true
+                    return
+                }
+                if (event.key === Qt.Key_Down || event.key === Qt.Key_Left) {
+                    brightnessManager.bump(-step)
+                    event.accepted = true
+                    return
+                }
+            }
+
             event.accepted = false
         }
     }
@@ -207,6 +221,8 @@ PanelWindow {
     }
 
     Managers.AudioManager { id: audioManager }
+
+    Managers.BrightnessManager { id: brightnessManager }
 
     Managers.MusicPlayerManager { id: musicPlayerManager }
 
@@ -426,6 +442,7 @@ PanelWindow {
             batteryManager: batteryManager
             imeStatus: imeStatus
             idleInhibitorManager: idleInhibitorManager
+            brightnessManager: brightnessManager
             settingsManager: settingsManager
         }
         }
@@ -566,6 +583,25 @@ PanelWindow {
             musicPlayerManager: volumeLoader.musicPlayerManagerRef
             theme: volumeLoader.themeRef
             typo: volumeLoader.typoRef
+        }
+    }
+
+    Loader {
+        id: brightnessLoader
+        anchors.fill: parent
+        z: 2
+        property var modeManagerRef: modeManager
+        property var themeRef: theme
+        property var typoRef: typo
+        property var brightnessManagerRef: brightnessManager
+        active: modeManagerRef.isMode("brightness")
+        sourceComponent: Content.BrightnessContent {
+            anchors.fill: parent
+            visible: brightnessLoader.modeManagerRef.isMode("brightness")
+            modeManager: brightnessLoader.modeManagerRef
+            brightnessManager: brightnessLoader.brightnessManagerRef
+            theme: brightnessLoader.themeRef
+            typo: brightnessLoader.typoRef
         }
     }
 
