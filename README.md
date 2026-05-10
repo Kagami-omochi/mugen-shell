@@ -65,6 +65,7 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 - Music player integration (playerctl / MPRIS) with YouTube thumbnail fallback and a seekable glowing progress slider
 - Clipboard history and notification center
 - Speaker / microphone control sharing the volume panel with a swap toggle
+- Laptop backlight slider with hardware-key integration (auto-hidden on desktops without a backlight)
 - WiFi / Bluetooth / IME management
 - Battery indicator (water-level fill inside the power menu icon, opt-in) and a collapsible system tray
 - App launcher, idle inhibitor toggle, screenshot capture with clipboard copy, screenshot gallery, power menu

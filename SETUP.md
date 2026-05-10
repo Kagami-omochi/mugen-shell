@@ -337,6 +337,8 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 | `XF86AudioPlay` | Play/pause |
 | `XF86AudioNext` | Next track |
 | `XF86AudioPrev` | Previous track |
+| `XF86MonBrightnessUp` | Brightness up (laptops with backlight) |
+| `XF86MonBrightnessDown` | Brightness down (laptops with backlight) |
 
 ---
 
@@ -350,6 +352,7 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **WiFiContent** - WiFi management UI
 - **BluetoothContent** - Bluetooth management UI
 - **VolumeContent** - Volume / microphone control UI
+- **BrightnessContent** - Backlight slider (laptops only; auto-hidden when no backlight is present)
 - **WallpaperContent** - Wallpaper management UI
 - **PowerMenuContent** - Power menu
 - **ScreenshotGalleryContent** - Screenshot gallery
@@ -366,7 +369,7 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **YuraChatPanel** - Side-anchored layer-shell window that loads `AiAssistantFloatingContent` with `showInternalOrb: false`
 
 ### Managers (`shell/components/managers/`)
-MusicPlayerManager, NotificationManager, ClipboardManager, WiFiManager, BluetoothManager, AudioManager, AudioLevel, CavaManager, MicCavaManager, BatteryManager, WallpaperManager, ScreenshotManager, IdleInhibitorManager, ImeStatus.
+MusicPlayerManager, NotificationManager, ClipboardManager, WiFiManager, BluetoothManager, AudioManager, AudioLevel, CavaManager, MicCavaManager, BatteryManager, BrightnessManager, WallpaperManager, ScreenshotManager, IdleInhibitorManager, ImeStatus.
 
 ### Core libraries (`shell/lib/`)
 ModeManager, SettingsManager, TimerManager, Colors, Typography, Animations, IconProvider, IconResolver, AiBackend, YuraState.
