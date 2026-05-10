@@ -11,7 +11,7 @@ Item {
 
     function scaled(v) { return modeManager ? modeManager.scale(v) : v }
 
-    visible: true  // TEMP: UI preview, revert to brightnessManager?.isAvailable
+    visible: brightnessManager && brightnessManager.isAvailable
     implicitWidth: visible ? scaled(24) : 0
     implicitHeight: scaled(24)
     Layout.alignment: Qt.AlignVCenter
