@@ -26,7 +26,8 @@ mugen-shell/
 │   ├── settings.default.json # OSS-friendly defaults
 │   ├── shell.qml             # Main Quickshell entry (bar + notifications)
 │   ├── yura-shell.qml        # Standalone Quickshell entry for Yura (separate process)
-│   └── settings-shell.qml    # Standalone Settings window
+│   ├── settings-shell.qml    # Standalone Settings window
+│   └── shortcuts-shell.qml   # Standalone keyboard shortcut reference window
 ├── ai/                       # mugen-ai Go backend
 │   ├── cmd/                  # CLI subcommands (chat, serve)
 │   ├── internal/             # Provider registry, server (HTTP + SSE /events), history, ...
@@ -304,7 +305,7 @@ For terminal use: `mugen-ai chat`.
 | `Super + Shift + I` | Toggle idle inhibitor |
 | `Super + Shift + B` | Pick blur preset (rofi) |
 
-Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix socket — see that script if you want to add more.
+Most panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix socket. The standalone windows (Calendar, Settings, Keyboard shortcuts) live in their own Quickshell processes and are toggled via the matching `toggle-*.sh` scripts instead.
 
 ### Window Management
 
@@ -358,8 +359,9 @@ Panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a Unix s
 - **ScreenshotGalleryContent** - Screenshot gallery
 - **CalendarFloatingContent** - Standalone two-pane Calendar window with SQLite-backed events (opens in its own window via Super + C)
 - **TimerContent** - Countdown timer UI (idle / running, ring + presets, keyboard control)
-- **SettingsFloatingContent** - Standalone scrolling Settings window (rows in `settings/`)
-- **AiAssistantContent** - Bar Spotlight row (Super+A)
+- **SettingsFloatingContent** - Standalone Settings window with sidebar categories (rows in `settings/`)
+- **KeyboardShortcutsContent** - Standalone keyboard shortcut reference (Super+/)
+- **AiAssistantContent** - Bar Spotlight row (Super+Y)
 - **AiAssistantFloatingContent** - Chat tree mounted inside the Yura corner panel — sidebar, message list, model dropdown, internal Yura indicator
 
 ### Yura (`shell/components/yura/`, `shell/yura-shell.qml`)

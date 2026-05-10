@@ -75,7 +75,7 @@ Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → C
 
 ## Usage
 
-Once installed (see [SETUP.md](SETUP.md)), the bar starts automatically with the Hyprland session. Press `Super + /` for the in-shell shortcuts panel, right-click the power menu icon to jump straight into Settings, or click the chevron next to the notification icon to expand the system tray. The full keybind list lives in [SETUP.md → Keybindings](SETUP.md#keybindings).
+Once installed (see [SETUP.md](SETUP.md)), the bar starts automatically with the Hyprland session. Press `Super + /` for the keyboard shortcut reference, right-click the power menu icon to jump straight into Settings, or click the chevron next to the notification icon to expand the system tray. The full keybind list lives in [SETUP.md → Keybindings](SETUP.md#keybindings).
 
 ---
 
