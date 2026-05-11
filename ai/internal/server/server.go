@@ -145,6 +145,23 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var fullResponse string
+	// Once we've streamed any content or fired any tool we can't safely
+	// drop the user message on error — the conversation has visible side
+	// effects, so persist what we have and surface the error instead.
+	var sideEffected bool
+
+	persistOnError := func(errMsg string) {
+		if sideEffected {
+			if fullResponse != "" {
+				_ = s.history.Add("assistant", fullResponse, model)
+				s.events.broadcast("conversations", nil)
+				s.events.broadcast("messages", map[string]any{"conversation_id": convID})
+			}
+		} else {
+			s.history.RemoveLast()
+		}
+		sendEvent(map[string]any{"error": errMsg, "done": true})
+	}
 
 	for iteration := 0; iteration < maxIterations; iteration++ {
 		var iterContent string
@@ -154,6 +171,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			if chunk.Content != "" {
 				iterContent += chunk.Content
 				fullResponse += chunk.Content
+				sideEffected = true
 				sendEvent(map[string]any{"content": chunk.Content})
 			}
 			if chunk.Done {
@@ -163,8 +181,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil {
-			s.history.RemoveLast()
-			sendEvent(map[string]any{"error": err.Error(), "done": true})
+			persistOnError(err.Error())
 			return
 		}
 
@@ -189,6 +206,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 		for _, tc := range iterToolCalls {
 			result, callErr := s.tools.Call(r.Context(), tc.Name, tc.Arguments)
+			sideEffected = true
 			resultPayload := result
 			if callErr != nil {
 				resultPayload = fmt.Sprintf("error: %v (output: %s)", callErr, result)
@@ -212,7 +230,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sendEvent(map[string]any{"error": "max tool iterations exceeded", "done": true})
+	persistOnError("max tool iterations exceeded")
 }
 
 func errString(err error) string {
