@@ -32,7 +32,7 @@ For directory layout, install paths (Nix flake home-manager module or manual `ma
 
 https://github.com/user-attachments/assets/2409880e-4214-4b38-951c-834876570aaa
 
-Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + Y`) and a corner pop-up chat panel that slides in from off-screen (`Super + Shift + Y`). It's powered by **mugen-ai**, a Go server bundled in this repo under [`ai/`](ai/) that fronts local [Ollama](https://ollama.com) models, Google Gemini, and any OpenAI-compatible backend (OpenAI, OpenRouter, LM Studio, vLLM, ...).
+Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + Y`) and a corner pop-up chat panel that slides in from off-screen (`Super + Shift + Y`). It's powered by **mugen-ai**, a Go server bundled in this repo under [`ai/`](ai/) that fronts local [Ollama](https://ollama.com) models, Anthropic Claude, Google Gemini, and any OpenAI-compatible backend (OpenAI, OpenRouter, LM Studio, vLLM, ...).
 
 Built and enabled automatically on any install path (NixOS, Arch + Nix, or pure manual `make install` — see [SETUP.md](SETUP.md)).
 
@@ -44,6 +44,7 @@ Built and enabled automatically on any install path (NixOS, Arch + Nix, or pure 
 - Markdown rendering for assistant replies, with monospace code blocks that have their own hover-reveal copy button
 - Streaming responses with a stop button, a breathing indicator, and an IME-aware placeholder
 - Configurable personality and real-time context injection (date/time, weather)
+- Natural-language shell control — ask Yura to set the volume, toggle music, or open a panel and it drives mugen-shell directly via tool calls. Reversible actions fire immediately; destructive ones (e.g. deleting calendar events) are confirmed in plain language in chat first
 
 Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → Configuring mugen-ai](SETUP.md#configuring-mugen-ai).
 
