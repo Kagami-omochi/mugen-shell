@@ -111,9 +111,6 @@ PanelWindow {
     }
 
     property alias notificationManager: notificationManager
-    readonly property alias theme: theme
-    readonly property alias icons: icons
-    property var confirmWindow: null
 
     // Auto-close any open mode after idle. AI is exempt — users read streamed
     // responses without moving the cursor, so it relies on ESC / click-outside.
@@ -238,7 +235,6 @@ PanelWindow {
         notificationManager: notificationManager
         theme: theme
         timerManager: timerManager
-        confirmWindow: barWindow.confirmWindow
     }
 
     Managers.WallpaperManager { id: wallpaperManager }

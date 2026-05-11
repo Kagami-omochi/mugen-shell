@@ -1,16 +1,11 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strconv"
-	"sync"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/tmy7533018/mugen-ai/internal/history"
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/state"
@@ -20,72 +15,16 @@ import (
 
 const maxRequestBody = 64 * 1024 // 64KB
 
-const confirmTimeout = 60 * time.Second
-
 type Server struct {
-	registry   *provider.Registry
-	history    *history.History
-	store      *store.Store
-	tools      *tools.Registry
-	events     *eventBus
-	qsConfig   string
-	listenAddr string
-
-	confirmsMu sync.Mutex
-	confirms   map[string]chan bool
+	registry *provider.Registry
+	history  *history.History
+	store    *store.Store
+	tools    *tools.Registry
+	events   *eventBus
 }
 
-func New(registry *provider.Registry, hist *history.History, st *store.Store, t *tools.Registry, qsConfig, listenAddr string) *Server {
-	s := &Server{
-		registry:   registry,
-		history:    hist,
-		store:      st,
-		tools:      t,
-		events:     newEventBus(),
-		qsConfig:   qsConfig,
-		listenAddr: listenAddr,
-		confirms:   map[string]chan bool{},
-	}
-	// Tools that require confirmation route through the server so it can
-	// dispatch the shell modal and wait on the user's response.
-	t.SetConfirmer(s)
-	return s
-}
-
-// RequestConfirm implements tools.Confirmer. It pops a modal in the shell,
-// waits for the callback, and returns the user's choice.
-func (s *Server) RequestConfirm(ctx context.Context, req tools.ConfirmRequest) (bool, error) {
-	id := uuid.New().String()
-	ch := make(chan bool, 1)
-
-	s.confirmsMu.Lock()
-	s.confirms[id] = ch
-	s.confirmsMu.Unlock()
-
-	defer func() {
-		s.confirmsMu.Lock()
-		delete(s.confirms, id)
-		s.confirmsMu.Unlock()
-	}()
-
-	qsCfg := s.qsConfig
-	if qsCfg == "" {
-		qsCfg = "mugen-shell"
-	}
-	callbackURL := fmt.Sprintf("http://%s/confirm/%s", s.listenAddr, id)
-	cmd := exec.CommandContext(ctx, "qs", "-c", qsCfg, "ipc", "call", "confirm", "request", id, req.Message, callbackURL, req.Icon)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return false, fmt.Errorf("confirm dispatch: %w (output: %s)", err, string(out))
-	}
-
-	select {
-	case approved := <-ch:
-		return approved, nil
-	case <-time.After(confirmTimeout):
-		return false, fmt.Errorf("confirm timed out after %s", confirmTimeout)
-	case <-ctx.Done():
-		return false, ctx.Err()
-	}
+func New(registry *provider.Registry, hist *history.History, st *store.Store, t *tools.Registry) *Server {
+	return &Server{registry: registry, history: hist, store: st, tools: t, events: newEventBus()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -107,38 +46,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /tools", s.handleListTools)
 	mux.HandleFunc("POST /tools/call", s.handleToolCall)
 
-	mux.HandleFunc("POST /confirm/{id}", s.handleConfirmResponse)
-
 	return corsMiddleware(mux)
-}
-
-type confirmResponseBody struct {
-	Approved bool `json:"approved"`
-}
-
-func (s *Server) handleConfirmResponse(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
-	id := r.PathValue("id")
-	var body confirmResponseBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid body", http.StatusBadRequest)
-		return
-	}
-
-	s.confirmsMu.Lock()
-	ch, ok := s.confirms[id]
-	s.confirmsMu.Unlock()
-	if !ok {
-		http.Error(w, "unknown confirm id", http.StatusNotFound)
-		return
-	}
-
-	select {
-	case ch <- body.Approved:
-	default:
-		// Already answered; ignore duplicate.
-	}
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

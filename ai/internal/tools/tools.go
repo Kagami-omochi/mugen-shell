@@ -27,35 +27,12 @@ type Tool struct {
 	// to read stdout (Calendar DB queries, etc.) which Quickshell's async
 	// Process can't return from an IpcHandler.
 	cmdTemplate []string
-
-	// When true, the registry asks its Confirmer for explicit user
-	// approval before dispatching. confirmMessage is the prompt shown to
-	// the user; "{{argName}}" placeholders are substituted at call time.
-	// confirmIcon is a short key the shell maps to an icon ("lock",
-	// "suspend", "logout", "reboot", "shutdown", or empty).
-	confirmRequired bool
-	confirmMessage  string
-	confirmIcon     string
-}
-
-// ConfirmRequest is what the registry hands to the Confirmer.
-type ConfirmRequest struct {
-	Message string
-	Icon    string
-}
-
-// Confirmer gates destructive tool calls (power_*, etc.) behind an
-// explicit UI confirmation. Implementations should block until the user
-// answers or the context expires.
-type Confirmer interface {
-	RequestConfirm(ctx context.Context, req ConfirmRequest) (approved bool, err error)
 }
 
 type Registry struct {
 	qsConfig   string
 	scriptsDir string
 	tools      []Tool
-	confirmer  Confirmer
 }
 
 func New(qsConfig, scriptsDir string) *Registry {
@@ -67,10 +44,6 @@ func New(qsConfig, scriptsDir string) *Registry {
 		scriptsDir: scriptsDir,
 		tools:      builtin(),
 	}
-}
-
-func (r *Registry) SetConfirmer(c Confirmer) {
-	r.confirmer = c
 }
 
 func (r *Registry) List() []Tool {
@@ -94,26 +67,6 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	t := r.Find(name)
 	if t == nil {
 		return "", fmt.Errorf("unknown tool: %s", name)
-	}
-
-	if t.confirmRequired {
-		if r.confirmer == nil {
-			return "", fmt.Errorf("tool %s requires confirmation but no confirmer is configured", name)
-		}
-		msg := t.confirmMessage
-		if msg == "" {
-			msg = "Run tool " + name + "?"
-		}
-		for key, v := range args {
-			msg = strings.ReplaceAll(msg, "{{"+key+"}}", fmt.Sprint(v))
-		}
-		approved, err := r.confirmer.RequestConfirm(ctx, ConfirmRequest{Message: msg, Icon: t.confirmIcon})
-		if err != nil {
-			return "", fmt.Errorf("confirm %s: %w", name, err)
-		}
-		if !approved {
-			return "denied: user did not approve", nil
-		}
 	}
 
 	var cmdName string
@@ -531,51 +484,6 @@ func builtin() []Tool {
 				"required": []string{"start", "end"},
 			},
 			cmdTemplate: []string{"{{scripts_dir}}/calendar-cli.py", "list-range", "--start", "{{start}}", "--end", "{{end}}"},
-		},
-		{
-			Name:            "power_lock",
-			Description:     "Lock the screen. Always confirmed via a modal — do not bypass with text-only confirmation.",
-			Parameters:      emptyParams(),
-			cmdTemplate:     []string{"loginctl", "lock-session"},
-			confirmRequired: true,
-			confirmMessage:  "Lock the screen now?",
-			confirmIcon:     "lock",
-		},
-		{
-			Name:            "power_suspend",
-			Description:     "Suspend the system (sleep). Always confirmed via a modal.",
-			Parameters:      emptyParams(),
-			cmdTemplate:     []string{"systemctl", "suspend"},
-			confirmRequired: true,
-			confirmMessage:  "Suspend the system now?",
-			confirmIcon:     "suspend",
-		},
-		{
-			Name:            "power_logout",
-			Description:     "End the current Hyprland session. Always confirmed via a modal.",
-			Parameters:      emptyParams(),
-			cmdTemplate:     []string{"hyprctl", "dispatch", "exit"},
-			confirmRequired: true,
-			confirmMessage:  "Log out of the current session?",
-			confirmIcon:     "logout",
-		},
-		{
-			Name:            "power_reboot",
-			Description:     "Reboot the machine. Always confirmed via a modal.",
-			Parameters:      emptyParams(),
-			cmdTemplate:     []string{"systemctl", "reboot"},
-			confirmRequired: true,
-			confirmMessage:  "Reboot the system now?",
-			confirmIcon:     "reboot",
-		},
-		{
-			Name:            "power_shutdown",
-			Description:     "Power off the machine. Always confirmed via a modal.",
-			Parameters:      emptyParams(),
-			cmdTemplate:     []string{"systemctl", "poweroff"},
-			confirmRequired: true,
-			confirmMessage:  "Shut down the system now?",
-			confirmIcon:     "shutdown",
 		},
 	}
 }

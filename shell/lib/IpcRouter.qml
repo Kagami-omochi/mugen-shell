@@ -17,7 +17,6 @@ Item {
     required property var notificationManager
     required property var theme
     required property var timerManager
-    property var confirmWindow: null
 
     IpcHandler {
         target: "audio"
@@ -163,24 +162,6 @@ Item {
 
         function list(): string {
             return JSON.stringify(ipcRouter.wallpaperManager.wallpapers || [])
-        }
-    }
-
-    IpcHandler {
-        target: "confirm"
-
-        // mugen-ai calls this when a tool needs explicit user approval
-        // (power_*, etc.). It pops the ConfirmWindow modal and posts the
-        // user's choice to callback_url, which is the mugen-ai endpoint
-        // that resolves the pending tool call. icon is an optional key
-        // ("lock", "suspend", "logout", "reboot", "shutdown") used by the
-        // modal to pick the right visual.
-        function request(id: string, message: string, callback_url: string, icon: string): string {
-            if (!ipcRouter.confirmWindow) {
-                return "error: confirm window not wired up"
-            }
-            ipcRouter.confirmWindow.show(id, message, callback_url, icon)
-            return "shown"
         }
     }
 

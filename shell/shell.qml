@@ -10,13 +10,6 @@ ShellRoot {
 
     Windows.Bar {
         id: barWindow
-        confirmWindow: confirmWindowInstance
-    }
-
-    Windows.ConfirmWindow {
-        id: confirmWindowInstance
-        theme: barWindow.theme
-        icons: barWindow.icons
     }
 
     Connections {
