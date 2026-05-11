@@ -15,7 +15,7 @@ Rectangle {
     Theme.AiBackend { id: aiBackend }
 
     width: parent ? parent.width : 420
-    height: section.isExpanded ? 64 + Math.min(section.options.length, 6) * 36 + 12 : 64
+    height: section.isExpanded ? 64 + section.options.length * 36 + 12 : 64
     color: theme ? theme.surfaceInsetSubtle : Qt.rgba(0, 0, 0, 0.25)
     radius: 20
     border.width: 1
