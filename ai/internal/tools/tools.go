@@ -91,7 +91,7 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 		return "error: cmd contains shell metacharacters (;|&$ etc.); only plain `binary [args]` strings are allowed. Tell the user the command was blocked for safety."
 	}
 	if len(r.allowedApps) == 0 {
-		return "error: app launcher has no allowed apps. First tell the user nothing is allowed yet, then point them at Settings → AI / Yura → Allowed apps so they can pick which apps you may open."
+		return "error: app launcher has no allowed apps. Tell the user nothing is allowed yet, then immediately call panel_open(name=\"settings\") so they can pick apps via AI / Yura → Allowed apps."
 	}
 	tokens := strings.Fields(strings.TrimSpace(cmd))
 	if len(tokens) == 0 {
@@ -103,7 +103,7 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 			return ""
 		}
 	}
-	return fmt.Sprintf("error: %q is not in the app launcher allowlist. First tell the user the app is not allowed, then suggest they enable %q via Settings → AI / Yura → Allowed apps.", bin, bin)
+	return fmt.Sprintf("error: %q is not in the app launcher allowlist. Allowed apps right now: %s. If one of those is the same app under a different name (e.g. user said \"zenbrowser\" but the binary is \"zen-bin\"), retry app_launch with that binary. Otherwise tell the user the app is not allowed, then immediately call panel_open(name=\"settings\") so they can enable %q via AI / Yura → Allowed apps.", bin, strings.Join(r.allowedApps, ", "), bin)
 }
 
 func (r *Registry) List() []Tool {
@@ -146,7 +146,7 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	}
 
 	if cat := CategoryOf(name); r.disabledCats[cat] {
-		msg := fmt.Sprintf("error: tool category %q is disabled in [tools].disabled_categories. First tell the user the %s category is currently off and point them at Settings → AI / Yura → Tool categories to re-enable it. After that you may suggest a workaround if one fits.", cat, cat)
+		msg := fmt.Sprintf("error: tool category %q is disabled in [tools].disabled_categories. First tell the user the %s category is currently off, then immediately call panel_open(name=\"settings\") so they can re-enable it via AI / Yura → Tool categories. After that you may suggest a workaround if one fits.", cat, cat)
 		r.auditor.Log(name, args, msg, nil)
 		return msg, nil
 	}
