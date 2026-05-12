@@ -33,23 +33,30 @@ Rectangle {
 
         ColumnLayout {
             Layout.fillWidth: true
+            // 0 minimum lets the column shrink under the long description;
+            // elide on the texts keeps the pill from being pushed off-screen.
+            Layout.minimumWidth: 0
             spacing: 2
 
             Text {
+                Layout.fillWidth: true
                 text: "Bar Yura thinking"
                 color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.90)
                 font.pixelSize: 12
                 font.family: "M PLUS 2"
                 font.weight: Font.Normal
                 font.letterSpacing: 0.5
+                elide: Text.ElideRight
             }
 
             Text {
-                text: "Internal reasoning before reply (qwen3 / sonnet / opus / gemini-2.5 / o-series). Unsupported models fall back silently"
+                Layout.fillWidth: true
+                text: "Internal reasoning before reply (capable models only)"
                 color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.60)
                 font.pixelSize: 10
                 font.family: "M PLUS 2"
                 opacity: 0.6
+                elide: Text.ElideRight
             }
         }
 
@@ -57,6 +64,7 @@ Rectangle {
             id: pill
             Layout.preferredWidth: 44
             Layout.preferredHeight: 24
+            Layout.alignment: Qt.AlignVCenter
             radius: 12
 
             readonly property bool on: section.settingsManager && section.settingsManager.barThinking
