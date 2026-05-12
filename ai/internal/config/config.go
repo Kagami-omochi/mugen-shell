@@ -12,6 +12,19 @@ type Config struct {
 	Context     Context     `toml:"context"`
 	Provider    Provider    `toml:"provider"`
 	Shell       Shell       `toml:"shell"`
+	Tools       Tools       `toml:"tools"`
+}
+
+type Tools struct {
+	AppLaunch AppLaunchTool `toml:"app_launch"`
+}
+
+// AppLaunchTool gates the app_launch tool. Leaving AllowedCommands empty
+// keeps the legacy "anything goes" behaviour for personal use; setting it
+// flips the tool into strict allowlist mode so a prompt-injected request
+// can't ask Yura to run rm or curl.
+type AppLaunchTool struct {
+	AllowedCommands []string `toml:"allowed_commands"`
 }
 
 type Shell struct {

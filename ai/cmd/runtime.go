@@ -79,7 +79,7 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 		Registry: registry,
 		Store:    st,
 		History:  hist,
-		Tools:    tools.New(cfg.Shell.QsConfig, resolveScriptsDir(cfg.Shell.ScriptsDir)),
+		Tools:    tools.New(cfg.Shell.QsConfig, resolveScriptsDir(cfg.Shell.ScriptsDir), cfg.Tools.AppLaunch.AllowedCommands),
 	}, nil
 }
 

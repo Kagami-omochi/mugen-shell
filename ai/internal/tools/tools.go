@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -30,20 +31,43 @@ type Tool struct {
 }
 
 type Registry struct {
-	qsConfig   string
-	scriptsDir string
-	tools      []Tool
+	qsConfig    string
+	scriptsDir  string
+	allowedApps []string
+	tools       []Tool
 }
 
-func New(qsConfig, scriptsDir string) *Registry {
+func New(qsConfig, scriptsDir string, allowedApps []string) *Registry {
 	if qsConfig == "" {
 		qsConfig = "mugen-shell"
 	}
 	return &Registry{
-		qsConfig:   qsConfig,
-		scriptsDir: scriptsDir,
-		tools:      builtin(),
+		qsConfig:    qsConfig,
+		scriptsDir:  scriptsDir,
+		allowedApps: allowedApps,
+		tools:       builtin(),
 	}
+}
+
+// rejectAppLaunch returns a non-empty error string when app_launch is
+// configured with an allowlist and the requested command isn't in it.
+// Empty allowedApps keeps the legacy permissive behaviour.
+func (r *Registry) rejectAppLaunch(args map[string]any) string {
+	if len(r.allowedApps) == 0 {
+		return ""
+	}
+	cmd, _ := args["cmd"].(string)
+	tokens := strings.Fields(strings.TrimSpace(cmd))
+	if len(tokens) == 0 {
+		return ""
+	}
+	bin := filepath.Base(tokens[0])
+	for _, a := range r.allowedApps {
+		if a == bin || a == tokens[0] {
+			return ""
+		}
+	}
+	return fmt.Sprintf("error: %q is not in [tools.app_launch].allowed_commands. Tell the user the command is blocked and ask them to add it to ~/.config/mugen-ai/config.toml if they want to allow it.", bin)
 }
 
 func (r *Registry) List() []Tool {
@@ -67,6 +91,12 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	t := r.Find(name)
 	if t == nil {
 		return "", fmt.Errorf("unknown tool: %s", name)
+	}
+
+	if name == "app_launch" {
+		if rejection := r.rejectAppLaunch(args); rejection != "" {
+			return rejection, nil
+		}
 	}
 
 	var cmdName string
@@ -379,7 +409,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "app_launch",
-			Description: "Launch a desktop app or command. Pass the executable name or full command line (it inherits the user's $PATH). For destructive or unfamiliar commands, confirm in plain language with the user first; obvious requests like \"launch firefox\" you can run immediately.",
+			Description: "Launch a desktop app or command. Pass the executable name or full command line (it inherits the user's $PATH). If the user has configured [tools.app_launch].allowed_commands in mugen-ai's config, commands outside that list are rejected with an \"error: ... not in allowed_commands\" string — surface that to the user and ask them to add it to their config if they want to allow it. For destructive or unfamiliar commands, confirm in plain language with the user first; obvious requests like \"launch firefox\" you can run immediately.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
