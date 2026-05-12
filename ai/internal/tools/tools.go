@@ -82,20 +82,20 @@ func CategoryOf(toolName string) string {
 const shellMetachars = ";|&$`<>(){}[]\\!*?\"'\n\r"
 
 // rejectAppLaunch returns a non-empty error string when app_launch should
-// not run the requested command — either because the cmd contains shell
-// metacharacters (always rejected, even in legacy permissive mode) or
-// because the binary basename isn't in the user's allowlist.
+// not run the requested command. The gate is strict by default: an empty
+// allowlist means no apps are allowed (the user has to enable each app
+// explicitly), and shell metacharacters are always rejected.
 func (r *Registry) rejectAppLaunch(args map[string]any) string {
 	cmd, _ := args["cmd"].(string)
 	if strings.ContainsAny(cmd, shellMetachars) {
 		return "error: cmd contains shell metacharacters (;|&$ etc.); only plain `binary [args]` strings are allowed. Tell the user the command was blocked for safety."
 	}
 	if len(r.allowedApps) == 0 {
-		return ""
+		return "error: app launcher has no allowed apps. First tell the user nothing is allowed yet, then point them at Settings → AI / Yura → Allowed apps so they can pick which apps you may open."
 	}
 	tokens := strings.Fields(strings.TrimSpace(cmd))
 	if len(tokens) == 0 {
-		return ""
+		return "error: cmd is empty."
 	}
 	bin := filepath.Base(tokens[0])
 	for _, a := range r.allowedApps {

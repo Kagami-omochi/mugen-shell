@@ -76,7 +76,7 @@ Rectangle {
 
     function summary() {
         if (!loaded) return "loading…"
-        if (section.allowedCount === 0) return "permissive (any app)"
+        if (section.allowedCount === 0) return "no apps allowed"
         return section.allowedCount + " app" + (section.allowedCount === 1 ? "" : "s") + " allowed"
     }
 
@@ -316,7 +316,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                text: "Pick the apps Yura is allowed to open. Empty list = any app (permissive — not recommended outside personal setups). Shell metacharacters (; | & $ etc.) are always rejected, so even an allowed app can't be tricked into running side commands."
+                text: "Pick which installed apps Yura may open. Empty list = Yura can't open anything (safest default). Shell metacharacters (; | & $ etc.) are always rejected, so even an allowed app can't be tricked into running side commands."
                 color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.60)
                 font.pixelSize: 10
                 font.family: "M PLUS 2"

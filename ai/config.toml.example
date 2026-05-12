@@ -49,9 +49,14 @@
 #   models = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-7"]
 
 # [tools.app_launch]
-#   # Allowlist for the app_launch tool. Yura can only launch commands whose
-#   # binary name (basename) appears here. Leave the whole block out to keep
-#   # the legacy "anything goes" behaviour — recommended only for single-user
-#   # personal setups, since a prompt-injected message could otherwise ask
-#   # Yura to run arbitrary commands.
+#   # Strict allowlist for the app_launch tool: Yura can only launch
+#   # commands whose binary basename appears here. If the block is omitted
+#   # or empty, Yura cannot open any app at all. Pick which installed apps
+#   # to allow via Settings → AI / Yura → Allowed apps, or edit by hand:
 #   allowed_commands = ["firefox", "kitty", "code", "obsidian"]
+#
+# [tools]
+#   # Categories of tools to hide from Yura (audio / music / brightness /
+#   # theme / wallpaper / notification / timer / calendar / panel / app).
+#   # Edit via Settings → AI / Yura → Tool categories.
+#   disabled_categories = []

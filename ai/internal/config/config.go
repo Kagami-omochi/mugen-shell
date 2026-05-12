@@ -22,10 +22,10 @@ type Tools struct {
 	DisabledCategories []string `toml:"disabled_categories" json:"disabled_categories"`
 }
 
-// AppLaunchTool gates the app_launch tool. Leaving AllowedCommands empty
-// keeps the legacy "anything goes" behaviour for personal use; setting it
-// flips the tool into strict allowlist mode so a prompt-injected request
-// can't ask Yura to run rm or curl.
+// AppLaunchTool gates the app_launch tool. Default is strict: an empty
+// AllowedCommands means no apps can be launched at all, so a prompt-
+// injected request can't ask Yura to run rm or curl. The user picks
+// which installed apps to allow via Settings → AI / Yura → Allowed apps.
 type AppLaunchTool struct {
 	AllowedCommands []string `toml:"allowed_commands" json:"allowed_commands"`
 }
