@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type Tool struct {
@@ -28,6 +29,12 @@ type Tool struct {
 	// to read stdout (Calendar DB queries, etc.) which Quickshell's async
 	// Process can't return from an IpcHandler.
 	cmdTemplate []string
+
+	// readonly tools run under an RLock so concurrent reads don't block
+	// each other. Anything that mutates shell state (set / toggle / open
+	// / launch / add / delete / clear) leaves this false and takes an
+	// exclusive write lock.
+	readonly bool
 }
 
 type Registry struct {
@@ -36,6 +43,7 @@ type Registry struct {
 	allowedApps []string
 	auditor     *Auditor
 	tools       []Tool
+	mu          sync.RWMutex
 }
 
 func New(qsConfig, scriptsDir string, allowedApps []string, auditor *Auditor) *Registry {
@@ -93,6 +101,14 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	t := r.Find(name)
 	if t == nil {
 		return "", fmt.Errorf("unknown tool: %s", name)
+	}
+
+	if t.readonly {
+		r.mu.RLock()
+		defer r.mu.RUnlock()
+	} else {
+		r.mu.Lock()
+		defer r.mu.Unlock()
 	}
 
 	if name == "app_launch" {
@@ -192,6 +208,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "get_volume",
+			readonly:    true,
 		},
 		{
 			Name:        "audio_toggle_mute",
@@ -270,6 +287,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "get_mic_volume",
+			readonly:    true,
 		},
 		{
 			Name:        "audio_toggle_mic_mute",
@@ -303,6 +321,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "brightness",
 			function:    "get",
+			readonly:    true,
 		},
 		{
 			Name:        "theme_set",
@@ -335,6 +354,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "theme",
 			function:    "get",
+			readonly:    true,
 		},
 		{
 			Name:        "wallpaper_set",
@@ -359,6 +379,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "wallpaper",
 			function:    "current",
+			readonly:    true,
 		},
 		{
 			Name:        "wallpaper_list",
@@ -366,6 +387,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "wallpaper",
 			function:    "list",
+			readonly:    true,
 		},
 		{
 			Name:        "notification_toggle_dnd",
@@ -397,6 +419,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "get_dnd",
+			readonly:    true,
 		},
 		{
 			Name:        "notification_clear_all",
@@ -411,6 +434,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "unread",
+			readonly:    true,
 		},
 		{
 			Name:        "app_launch",
@@ -474,6 +498,7 @@ func builtin() []Tool {
 			Parameters:  emptyParams(),
 			target:      "timer",
 			function:    "get",
+			readonly:    true,
 		},
 		{
 			Name:        "calendar_add",
@@ -506,6 +531,7 @@ func builtin() []Tool {
 			Description: "List today's calendar events as JSON: { events: [{ id, date, time, title }, ...] }.",
 			Parameters:  emptyParams(),
 			cmdTemplate: []string{"{{scripts_dir}}/calendar-cli.py", "list-today"},
+			readonly:    true,
 		},
 		{
 			Name:        "calendar_list_range",
@@ -519,6 +545,7 @@ func builtin() []Tool {
 				"required": []string{"start", "end"},
 			},
 			cmdTemplate: []string{"{{scripts_dir}}/calendar-cli.py", "list-range", "--start={{start}}", "--end={{end}}"},
+			readonly:    true,
 		},
 	}
 }
