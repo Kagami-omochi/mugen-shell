@@ -39,18 +39,18 @@ Yura is the desktop chat persona — a Spotlight-style row in the bar (`Super + 
 - **Local** — any [Ollama](https://ollama.com) model on your machine (no network)
 - **Cloud** — Anthropic Claude, Google Gemini, or any OpenAI-compatible backend (OpenAI, OpenRouter, LM Studio, vLLM, …)
 
-Built and enabled automatically on any install path (NixOS, Arch + Nix, or pure manual `make install` — see [SETUP.md](SETUP.md)). Everything Yura-related — providers, personality, tool toggles, allowed apps — lives under **Settings → AI / Yura**, no TOML editing required.
+Set up alongside mugen-shell via NixOS, Arch + Nix, or `make install` — see [SETUP.md](SETUP.md). Everything Yura-related — providers, personality, tool toggles, allowed apps — lives under **Settings → AI / Yura**.
 
 - Spotlight-style one-row prompt in the bar — Yura icon + input pill, response streams into the placeholder, navigable read-only after streaming, clicking the icon detaches into the corner panel
 - Corner pop-up panel (left or right, configurable); sidebar of past conversations, cosmic gradient background, drifting particles, and a soft breathing indicator that follows the latest reply
-- The bar row and the corner pop-up stay in sync — send a message in one and it shows up in the other instantly
-- Multi-conversation history persisted on disk — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you actually send something
+- The bar row and the corner pop-up stay in sync — send a message in one and it shows up in the other
+- Multi-conversation history persisted on disk — pick up old chats from the sidebar, delete with a hover trash, "+ New chat" stays empty until you send something
 - Per-conversation model binding — each chat stays on the provider it was started with; the panel dropdown locks to read-only mid-conversation, and the Settings → AI / Yura tab pins the bar's default model
 - Markdown rendering for assistant replies, with monospace code blocks that have their own hover-reveal copy button
 - Streaming responses with a stop button, a breathing indicator, and an IME-aware placeholder
 - Configurable personality (name / tone / language / system prompt) edited in-app — Save & Apply writes the config and hot-restarts the backend, no terminal trip
 - Per-conversation Thinking toggle that routes to each provider's reasoning channel (qwen3 think / Claude extended thinking / Gemini thinkingConfig / OpenAI reasoning_effort), with a silent fallback for models that don't support it
-- **Strict-by-default allowed-apps gate**: the picker shows your installed desktop apps, and until you enable one Yura can't open anything. Shell metacharacters (`; | & $` etc.) are always rejected so an allowed app can't be turned into a shell-injection.
+- **Strict-by-default allowed-apps gate**: the picker shows your installed desktop apps, and until you enable one Yura can't open anything. Shell metacharacters (`; | & $` etc.) are always rejected so an allowed app can't smuggle in a shell injection.
 - **Per-category tool toggles** (audio, music, brightness, theme, wallpaper, notifications, timer, calendar, panels, app launcher) — disabled categories vanish from Yura's tool list, and Yura proactively tells you when you ask for something turned off
 - Natural-language shell control via function-calling tools — see *Shell control by chat* below
 
@@ -76,14 +76,16 @@ plain language in chat first — no modal popups.
 | Calendar | add / delete events, list today or a date range |
 | Panels | open named panel, close any panel |
 
-Each row above can be turned off as a whole category in Settings → AI / Yura → Tool categories, and app launches are gated by the Allowed apps picker (the example "launch firefox" works only once you've enabled firefox there). Power actions (lock / suspend / logout / reboot / shutdown) intentionally stay out of Yura's reach — drive those from the Power Menu directly.
+Each row above can be turned off as a whole category in Settings → AI / Yura → Tool categories, and app launches are gated by the Allowed apps picker (so "launch firefox" only works once you've enabled firefox there).
+
+Power actions (lock / suspend / logout / reboot / shutdown) intentionally stay out of Yura's reach — drive those from the Power Menu directly.
 
 Examples that land today: "set volume to 30", "lower the brightness",
 "switch to light mode", "shuffle the wallpaper", "next track", "DnD on",
 "open settings", "set a 25 minute timer", "add a calendar event tomorrow
 at 3pm", "launch firefox".
 
-Configuration, the HTTP API, and the Gemini API key step live in [SETUP.md → Configuring mugen-ai](SETUP.md#configuring-mugen-ai).
+Provider API keys, the config file layout, and the HTTP API live in [SETUP.md → Configuring mugen-ai](SETUP.md#configuring-mugen-ai).
 
 ---
 
