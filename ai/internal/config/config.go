@@ -16,6 +16,10 @@ type Config struct {
 
 type Tools struct {
 	AppLaunch AppLaunchTool `toml:"app_launch" json:"app_launch"`
+	// DisabledCategories hides whole tool groups (audio / music / panel /
+	// brightness / theme / wallpaper / notification / timer / calendar /
+	// app) from the LLM. Empty = every category enabled.
+	DisabledCategories []string `toml:"disabled_categories" json:"disabled_categories"`
 }
 
 // AppLaunchTool gates the app_launch tool. Leaving AllowedCommands empty

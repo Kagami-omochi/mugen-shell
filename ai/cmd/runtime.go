@@ -91,6 +91,7 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 			cfg.Shell.QsConfig,
 			resolveScriptsDir(cfg.Shell.ScriptsDir),
 			cfg.Tools.AppLaunch.AllowedCommands,
+			cfg.Tools.DisabledCategories,
 			tools.NewAuditor(filepath.Join(stateDir, "audit.log")),
 		),
 	}, nil

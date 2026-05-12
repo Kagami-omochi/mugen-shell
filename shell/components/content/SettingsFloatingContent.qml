@@ -29,7 +29,7 @@ Item {
         { id: "appearance", label: "Appearance",   types: ["theme", "gradient", "blur", "animation", "dateFormat"] },
         { id: "sound",      label: "Sound",        types: ["notificationSound", "timerSound"] },
         { id: "timer",      label: "Timer & Lock", types: ["timer", "lockTimer"] },
-        { id: "ai",         label: "AI / Yura",    types: ["yuraPersonality", "aiBarModel", "yuraThinking", "yuraPanelSide"] },
+        { id: "ai",         label: "AI / Yura",    types: ["yuraPersonality", "yuraProvider", "aiBarModel", "yuraThinking", "yuraToolCategories", "yuraAppLaunch", "yuraPanelSide"] },
         { id: "system",     label: "System",       types: ["battery", "shortcuts"] },
         { id: "reset",      label: "Reset",        types: ["reset"], danger: true }
     ]
@@ -178,7 +178,10 @@ Item {
                                 case "aiBarModel":        return aiBarModelSection
                                 case "yuraPanelSide":     return yuraPanelSideSection
                                 case "yuraPersonality":   return yuraPersonalitySection
+                                case "yuraProvider":      return yuraProviderSection
                                 case "yuraThinking":      return yuraThinkingSection
+                                case "yuraToolCategories": return yuraToolCategoriesSection
+                                case "yuraAppLaunch":     return yuraAppLaunchSection
                                 case "shortcuts":         return shortcutsSection
                                 case "reset":             return resetSection
                                 default:                  return null
@@ -288,6 +291,18 @@ Item {
         theme: root.theme
         modeManager: root.modeManager
         settingsManager: root.settingsManager
+    }}
+    Component { id: yuraAppLaunchSection; Settings.YuraAppLaunchSection {
+        theme: root.theme
+        modeManager: root.modeManager
+    }}
+    Component { id: yuraProviderSection; Settings.YuraProviderSection {
+        theme: root.theme
+        modeManager: root.modeManager
+    }}
+    Component { id: yuraToolCategoriesSection; Settings.YuraToolCategoriesSection {
+        theme: root.theme
+        modeManager: root.modeManager
     }}
     Component { id: shortcutsSection; Settings.KeyboardShortcutsSection {
         theme: root.theme

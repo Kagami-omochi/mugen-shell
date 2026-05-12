@@ -38,25 +38,41 @@ type Tool struct {
 }
 
 type Registry struct {
-	qsConfig    string
-	scriptsDir  string
-	allowedApps []string
-	auditor     *Auditor
-	tools       []Tool
-	mu          sync.RWMutex
+	qsConfig     string
+	scriptsDir   string
+	allowedApps  []string
+	disabledCats map[string]bool
+	auditor      *Auditor
+	tools        []Tool
+	mu           sync.RWMutex
 }
 
-func New(qsConfig, scriptsDir string, allowedApps []string, auditor *Auditor) *Registry {
+func New(qsConfig, scriptsDir string, allowedApps, disabledCategories []string, auditor *Auditor) *Registry {
 	if qsConfig == "" {
 		qsConfig = "mugen-shell"
 	}
-	return &Registry{
-		qsConfig:    qsConfig,
-		scriptsDir:  scriptsDir,
-		allowedApps: allowedApps,
-		auditor:     auditor,
-		tools:       builtin(),
+	disabled := make(map[string]bool, len(disabledCategories))
+	for _, c := range disabledCategories {
+		disabled[strings.ToLower(strings.TrimSpace(c))] = true
 	}
+	return &Registry{
+		qsConfig:     qsConfig,
+		scriptsDir:   scriptsDir,
+		allowedApps:  allowedApps,
+		disabledCats: disabled,
+		auditor:      auditor,
+		tools:        builtin(),
+	}
+}
+
+// CategoryOf returns the category prefix of a tool name (everything before
+// the first underscore). Used to gate whole groups via Config.Tools.
+// DisabledCategories without enumerating each individual tool.
+func CategoryOf(toolName string) string {
+	if i := strings.Index(toolName, "_"); i > 0 {
+		return toolName[:i]
+	}
+	return toolName
 }
 
 // rejectAppLaunch returns a non-empty error string when app_launch is
@@ -81,7 +97,16 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 }
 
 func (r *Registry) List() []Tool {
-	return r.tools
+	if len(r.disabledCats) == 0 {
+		return r.tools
+	}
+	filtered := make([]Tool, 0, len(r.tools))
+	for _, t := range r.tools {
+		if !r.disabledCats[CategoryOf(t.Name)] {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
 }
 
 func (r *Registry) Find(name string) *Tool {
@@ -93,6 +118,13 @@ func (r *Registry) Find(name string) *Tool {
 	return nil
 }
 
+// IsCategoryDisabled reports whether the given category is gated off so
+// Call() can reject invocations even when the model somehow saw the tool
+// (e.g. an old conversation that still references it).
+func (r *Registry) IsCategoryDisabled(category string) bool {
+	return r.disabledCats[category]
+}
+
 // Call executes the named tool with the given arguments and returns the raw
 // stdout of the underlying command. Tools without a cmdTemplate route
 // through `qs ipc call`; tools with one exec it directly so they can read
@@ -101,6 +133,12 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	t := r.Find(name)
 	if t == nil {
 		return "", fmt.Errorf("unknown tool: %s", name)
+	}
+
+	if cat := CategoryOf(name); r.disabledCats[cat] {
+		msg := fmt.Sprintf("error: tool category %q is disabled in [tools].disabled_categories. Tell the user the category is off and let them enable it in Settings → AI / Yura → Tool categories.", cat)
+		r.auditor.Log(name, args, msg, nil)
+		return msg, nil
 	}
 
 	if t.readonly {
