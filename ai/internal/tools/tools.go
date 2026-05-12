@@ -75,14 +75,24 @@ func CategoryOf(toolName string) string {
 	return toolName
 }
 
-// rejectAppLaunch returns a non-empty error string when app_launch is
-// configured with an allowlist and the requested command isn't in it.
-// Empty allowedApps keeps the legacy permissive behaviour.
+// shellMetachars are the bytes that would let a cmd string break out of a
+// single-binary launch into arbitrary shell — `Hyprland.dispatch("exec "+cmd)`
+// runs cmd through /bin/sh, so any of these characters anywhere in the
+// string is a hard reject regardless of the allowlist.
+const shellMetachars = ";|&$`<>(){}[]\\!*?\"'\n\r"
+
+// rejectAppLaunch returns a non-empty error string when app_launch should
+// not run the requested command — either because the cmd contains shell
+// metacharacters (always rejected, even in legacy permissive mode) or
+// because the binary basename isn't in the user's allowlist.
 func (r *Registry) rejectAppLaunch(args map[string]any) string {
+	cmd, _ := args["cmd"].(string)
+	if strings.ContainsAny(cmd, shellMetachars) {
+		return "error: cmd contains shell metacharacters (;|&$ etc.); only plain `binary [args]` strings are allowed. Tell the user the command was blocked for safety."
+	}
 	if len(r.allowedApps) == 0 {
 		return ""
 	}
-	cmd, _ := args["cmd"].(string)
 	tokens := strings.Fields(strings.TrimSpace(cmd))
 	if len(tokens) == 0 {
 		return ""
@@ -93,7 +103,7 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 			return ""
 		}
 	}
-	return fmt.Sprintf("error: %q is not in the app_launch allowlist. First tell the user the command is blocked, then suggest they add %q via Settings → AI / Yura → App launcher allowlist.", bin, bin)
+	return fmt.Sprintf("error: %q is not in the app launcher allowlist. First tell the user the app is not allowed, then suggest they enable %q via Settings → AI / Yura → Allowed apps.", bin, bin)
 }
 
 func (r *Registry) List() []Tool {
