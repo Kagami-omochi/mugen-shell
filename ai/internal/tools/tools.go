@@ -34,10 +34,11 @@ type Registry struct {
 	qsConfig    string
 	scriptsDir  string
 	allowedApps []string
+	auditor     *Auditor
 	tools       []Tool
 }
 
-func New(qsConfig, scriptsDir string, allowedApps []string) *Registry {
+func New(qsConfig, scriptsDir string, allowedApps []string, auditor *Auditor) *Registry {
 	if qsConfig == "" {
 		qsConfig = "mugen-shell"
 	}
@@ -45,6 +46,7 @@ func New(qsConfig, scriptsDir string, allowedApps []string) *Registry {
 		qsConfig:    qsConfig,
 		scriptsDir:  scriptsDir,
 		allowedApps: allowedApps,
+		auditor:     auditor,
 		tools:       builtin(),
 	}
 }
@@ -95,6 +97,7 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 
 	if name == "app_launch" {
 		if rejection := r.rejectAppLaunch(args); rejection != "" {
+			r.auditor.Log(name, args, rejection, nil)
 			return rejection, nil
 		}
 	}
@@ -126,10 +129,12 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 
 	out, err := exec.CommandContext(ctx, cmdName, cmdArgs...).CombinedOutput()
 	res := strings.TrimSpace(string(out))
+	var callErr error
 	if err != nil {
-		return res, fmt.Errorf("%s failed: %w (output: %s)", name, err, res)
+		callErr = fmt.Errorf("%s failed: %w (output: %s)", name, err, res)
 	}
-	return res, nil
+	r.auditor.Log(name, args, res, callErr)
+	return res, callErr
 }
 
 // expandTemplate substitutes "{{argName}}" / "{{scripts_dir}}" tokens. Any

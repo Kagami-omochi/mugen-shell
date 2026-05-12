@@ -61,7 +61,9 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 		}
 	}
 
-	st, err := store.Open(historyDBPath())
+	stateDir := stateBaseDir()
+
+	st, err := store.Open(filepath.Join(stateDir, "history.db"))
 	if err != nil {
 		return nil, fmt.Errorf("open history store: %w", err)
 	}
@@ -79,7 +81,12 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 		Registry: registry,
 		Store:    st,
 		History:  hist,
-		Tools:    tools.New(cfg.Shell.QsConfig, resolveScriptsDir(cfg.Shell.ScriptsDir), cfg.Tools.AppLaunch.AllowedCommands),
+		Tools: tools.New(
+			cfg.Shell.QsConfig,
+			resolveScriptsDir(cfg.Shell.ScriptsDir),
+			cfg.Tools.AppLaunch.AllowedCommands,
+			tools.NewAuditor(filepath.Join(stateDir, "audit.log")),
+		),
 	}, nil
 }
 
@@ -126,11 +133,11 @@ func buildRegistry(cfg config.Config, model string) *provider.Registry {
 	return provider.NewRegistry(model, providers...)
 }
 
-func historyDBPath() string {
+func stateBaseDir() string {
 	d := os.Getenv("XDG_STATE_HOME")
 	if d == "" {
 		home, _ := os.UserHomeDir()
 		d = filepath.Join(home, ".local", "state")
 	}
-	return filepath.Join(d, "mugen-ai", "history.db")
+	return filepath.Join(d, "mugen-ai")
 }
