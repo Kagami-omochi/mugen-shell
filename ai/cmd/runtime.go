@@ -16,9 +16,16 @@ import (
 )
 
 // toolingSystemPrompt is prepended to the user's personality prompt so the
-// model knows the rules around calling shell tools. Confirmations are
-// expected in plain language; we do not surface a confirmation UI.
-const toolingSystemPrompt = `You can control the mugen-shell desktop through function-calling tools (audio, music, panel groups). Call read-only and reversible tools (reading volume, toggling music, opening a panel, switching theme) immediately when the user asks. For destructive or irreversible actions (deleting calendar events, clearing notifications, launching arbitrary apps, anything the user might regret), first describe what you are about to do in plain language and wait for the user's explicit confirmation in their next message; do not call the tool on the same turn as the request. Never call power-related tools — those are gated by a separate confirmation UI and are not exposed here yet.`
+// model knows the rules around calling shell tools. Centralising the
+// conventions here lets each tool's description stay short.
+const toolingSystemPrompt = `You can control the mugen-shell desktop through function-calling tools.
+
+Conventions for all tool calls:
+- Tool results that start with "error:" are failures. Surface the message verbatim instead of claiming success or silently retrying. The user may need to fix something (missing hardware, missing allowlist entry, etc.).
+- Tools whose description starts with "[DESTRUCTIVE]" (and app_launch for unfamiliar commands) must be confirmed in plain language first: describe what you are about to do, wait for the user's explicit confirmation in their next message, and only then call the tool. Never call a destructive tool on the same turn as the request.
+- Read-only and reversible tools (read*, get*, list*, toggle, music, theme/wallpaper switching, panel open) fire immediately when the user asks.
+- Power actions (lock / suspend / logout / reboot / shutdown) are intentionally NOT exposed as tools. If the user asks for one, tell them to use the Power Menu directly.
+- For app_launch: if the user has configured an allowlist and the command isn't in it, the result will be "error: ... not in allowed_commands" — tell the user the command is blocked and suggest adding it to their config.`
 
 type runtimeContext struct {
 	Cfg      config.Config

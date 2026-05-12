@@ -118,6 +118,10 @@ func (a *Anthropic) Chat(ctx context.Context, model string, messages []Message, 
 		payload["system"] = system
 	}
 	if len(toolsPayload) > 0 {
+		// Mark the last tool with ephemeral cache_control; per Anthropic's
+		// docs that covers the entire preceding tools block for ~5 minutes,
+		// dropping input-token cost on cache hits to ~10%.
+		toolsPayload[len(toolsPayload)-1]["cache_control"] = map[string]any{"type": "ephemeral"}
 		payload["tools"] = toolsPayload
 	}
 

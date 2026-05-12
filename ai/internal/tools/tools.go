@@ -218,7 +218,7 @@ func builtin() []Tool {
 	return []Tool{
 		{
 			Name:        "audio_set_volume",
-			Description: "Set the system output volume. Range 0-100 (percent).",
+			Description: "Set system output volume (0-100).",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -237,7 +237,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "audio_get_volume",
-			Description: "Read the current system output volume (0-100).",
+			Description: "Read current system output volume (0-100).",
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "get_volume",
@@ -245,35 +245,35 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "audio_toggle_mute",
-			Description: "Toggle the output mute state. Returns the new muted state.",
+			Description: "Toggle output mute. Returns new muted state.",
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "toggle_mute",
 		},
 		{
 			Name:        "music_toggle",
-			Description: "Play or pause the currently active MPRIS music player.",
+			Description: "Play or pause the active MPRIS player.",
 			Parameters:  emptyParams(),
 			target:      "music",
 			function:    "toggle",
 		},
 		{
 			Name:        "music_next",
-			Description: "Skip to the next track on the active MPRIS music player.",
+			Description: "Skip to next track.",
 			Parameters:  emptyParams(),
 			target:      "music",
 			function:    "next",
 		},
 		{
 			Name:        "music_previous",
-			Description: "Skip to the previous track on the active MPRIS music player.",
+			Description: "Skip to previous track.",
 			Parameters:  emptyParams(),
 			target:      "music",
 			function:    "previous",
 		},
 		{
 			Name:        "panel_open",
-			Description: "Open a mugen-shell panel. Inline bar panels: volume, wifi, bluetooth, brightness, ai, timer, clipboard, notification, wallpaper, power, music. Detached floating windows (toggle behaviour — calling open again closes them): settings, calendar, shortcuts.",
+			Description: "Open a mugen-shell panel. Inline: volume, wifi, bluetooth, brightness, ai, timer, clipboard, notification, wallpaper, power, music. Detached (toggle): settings, calendar, shortcuts.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -290,14 +290,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "panel_close",
-			Description: "Close any open mugen-shell side panel.",
+			Description: "Close any open inline panel.",
 			Parameters:  emptyParams(),
 			target:      "panel",
 			function:    "close",
 		},
 		{
 			Name:        "audio_set_mic_volume",
-			Description: "Set the microphone input volume. Range 0-100 (percent). Returns the new volume as a string, or a string starting with \"error:\" when no microphone is available — surface that to the user, don't claim success.",
+			Description: "Set microphone input volume (0-100).",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -316,7 +316,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "audio_get_mic_volume",
-			Description: "Read the current microphone input volume (0-100). Returns a string starting with \"error:\" when no microphone is available.",
+			Description: "Read current microphone volume (0-100).",
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "get_mic_volume",
@@ -324,14 +324,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "audio_toggle_mic_mute",
-			Description: "Toggle the microphone mute state. Returns the new muted state as a string (\"true\"/\"false\"), or a string starting with \"error:\" when no microphone is available.",
+			Description: "Toggle microphone mute. Returns new muted state.",
 			Parameters:  emptyParams(),
 			target:      "audio",
 			function:    "toggle_mic_mute",
 		},
 		{
 			Name:        "brightness_set",
-			Description: "Set the display brightness. Range 0-100 (percent). Returns the new brightness as a string, or a string starting with \"error:\" on desktops without a backlight — surface that to the user, don't claim success.",
+			Description: "Set display brightness (0-100). Unavailable on desktops without a backlight.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -350,7 +350,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "brightness_get",
-			Description: "Read the current display brightness (0-100). Returns a string starting with \"error:\" on desktops without a backlight.",
+			Description: "Read current display brightness (0-100).",
 			Parameters:  emptyParams(),
 			target:      "brightness",
 			function:    "get",
@@ -358,7 +358,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "theme_set",
-			Description: "Switch the desktop theme. Accepts \"dark\" or \"light\".",
+			Description: "Set desktop theme.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -376,14 +376,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "theme_toggle",
-			Description: "Flip between dark and light theme. Returns the new mode.",
+			Description: "Flip dark/light theme. Returns new mode.",
 			Parameters:  emptyParams(),
 			target:      "theme",
 			function:    "toggle",
 		},
 		{
 			Name:        "theme_get",
-			Description: "Read the current theme mode (\"dark\" or \"light\").",
+			Description: "Read current theme mode.",
 			Parameters:  emptyParams(),
 			target:      "theme",
 			function:    "get",
@@ -391,7 +391,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "wallpaper_set",
-			Description: "Switch the desktop wallpaper. `path` must be an absolute path to a file under the user's wallpaper directory; use wallpaper_list to discover available wallpapers.",
+			Description: "Set desktop wallpaper. Pass an absolute path from wallpaper_list.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -408,7 +408,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "wallpaper_current",
-			Description: "Read the absolute path of the currently active wallpaper.",
+			Description: "Read current wallpaper path.",
 			Parameters:  emptyParams(),
 			target:      "wallpaper",
 			function:    "current",
@@ -416,7 +416,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "wallpaper_list",
-			Description: "List available wallpapers as a JSON array of absolute paths.",
+			Description: "List wallpapers as JSON array of absolute paths.",
 			Parameters:  emptyParams(),
 			target:      "wallpaper",
 			function:    "list",
@@ -424,14 +424,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "notification_toggle_dnd",
-			Description: "Flip Do Not Disturb. Prefer notification_set_dnd when the user explicitly asks to turn it on or off — toggle is for \"switch DnD\".",
+			Description: "Flip Do Not Disturb. Prefer notification_set_dnd for explicit on/off.",
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "toggle_dnd",
 		},
 		{
 			Name:        "notification_set_dnd",
-			Description: "Set Do Not Disturb explicitly. When DnD is on, notification popups and sounds are suppressed but history still records them. Idempotent — call this for \"turn DnD on/off\" requests so you don't depend on the current state.",
+			Description: "Set DnD. true = on (suppress popups, sounds; history still records). Idempotent.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -448,7 +448,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "notification_get_dnd",
-			Description: "Read the current Do Not Disturb state (true = DnD enabled, popups suppressed).",
+			Description: "Read DnD state (true = on).",
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "get_dnd",
@@ -456,14 +456,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "notification_clear_all",
-			Description: "Clear all notification history. Returns the number of notifications cleared. DESTRUCTIVE — confirm in plain language before invoking.",
+			Description: "[DESTRUCTIVE] Clear all notification history. Returns count cleared.",
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "clear_all",
 		},
 		{
 			Name:        "notification_unread",
-			Description: "Read the current unread notification count.",
+			Description: "Read unread notification count.",
 			Parameters:  emptyParams(),
 			target:      "notification",
 			function:    "unread",
@@ -471,7 +471,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "app_launch",
-			Description: "Launch a desktop app or command. Pass the executable name or full command line (it inherits the user's $PATH). If the user has configured [tools.app_launch].allowed_commands in mugen-ai's config, commands outside that list are rejected with an \"error: ... not in allowed_commands\" string — surface that to the user and ask them to add it to their config if they want to allow it. For destructive or unfamiliar commands, confirm in plain language with the user first; obvious requests like \"launch firefox\" you can run immediately.",
+			Description: "[DESTRUCTIVE for unfamiliar commands] Launch a desktop app or command (inherits $PATH). May be gated by user's allowlist.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -488,7 +488,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "timer_start",
-			Description: "Start a countdown timer for the given duration in seconds. Only one timer runs at a time — starting a new one replaces any pending timer.",
+			Description: "Start countdown timer (seconds). Replaces any running timer.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -506,28 +506,28 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "timer_pause",
-			Description: "Pause the running timer.",
+			Description: "Pause running timer.",
 			Parameters:  emptyParams(),
 			target:      "timer",
 			function:    "pause",
 		},
 		{
 			Name:        "timer_resume",
-			Description: "Resume a paused timer.",
+			Description: "Resume paused timer.",
 			Parameters:  emptyParams(),
 			target:      "timer",
 			function:    "resume",
 		},
 		{
 			Name:        "timer_cancel",
-			Description: "Cancel the running or paused timer.",
+			Description: "Cancel running or paused timer.",
 			Parameters:  emptyParams(),
 			target:      "timer",
 			function:    "cancel",
 		},
 		{
 			Name:        "timer_get",
-			Description: "Return the current timer state as JSON: { running, paused, duration_sec, remaining_sec, alerting }.",
+			Description: "Read timer state as JSON: { running, paused, duration_sec, remaining_sec, alerting }.",
 			Parameters:  emptyParams(),
 			target:      "timer",
 			function:    "get",
@@ -535,7 +535,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "calendar_add",
-			Description: "Add a calendar event. `date` is YYYY-MM-DD, `time` is HH:MM (24h). Returns the new event as JSON.",
+			Description: "Add calendar event. date: YYYY-MM-DD, time: HH:MM (24h).",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -549,7 +549,7 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "calendar_delete",
-			Description: "Delete a calendar event by id. Destructive — confirm in plain language with the user before invoking.",
+			Description: "[DESTRUCTIVE] Delete a calendar event by id.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
@@ -561,14 +561,14 @@ func builtin() []Tool {
 		},
 		{
 			Name:        "calendar_list_today",
-			Description: "List today's calendar events as JSON: { events: [{ id, date, time, title }, ...] }.",
+			Description: "List today's calendar events as JSON { events: [{ id, date, time, title }, ...] }.",
 			Parameters:  emptyParams(),
 			cmdTemplate: []string{"{{scripts_dir}}/calendar-cli.py", "list-today"},
 			readonly:    true,
 		},
 		{
 			Name:        "calendar_list_range",
-			Description: "List calendar events between two dates (inclusive). `start` and `end` are YYYY-MM-DD. Returns JSON { events: [...] }.",
+			Description: "List calendar events between two YYYY-MM-DD dates (inclusive). JSON { events: [...] }.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
