@@ -9,7 +9,6 @@ Item {
     required property var imeStatus
     property var modeManager
 
-    // Scale helper
     function scaled(val) {
         if (modeManager) return modeManager.scale(val)
         return val

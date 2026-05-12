@@ -10,7 +10,6 @@ QtObject {
     property bool isHeadphone: false
     property bool headphoneReady: false
 
-    // Microphone (input source) state
     property int micVolume: 0
     property bool micMuted: false
     property bool micAvailable: false
@@ -123,8 +122,6 @@ QtObject {
             muteProcess.running = true
         }
     }
-
-    // Microphone (source) processes & helpers
 
     property Process micVolumeProcess: Process {
         running: false

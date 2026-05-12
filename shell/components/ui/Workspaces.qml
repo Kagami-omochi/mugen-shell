@@ -156,7 +156,6 @@ Item {
         }
 
         onTargetXChanged: {
-            // Behavior automatically animates from current position to new position.
             // Only update previousX when not already animating to get correct trail origin.
             if (!moveAnimation.running) {
                 previousX = currentX;

@@ -370,7 +370,6 @@ FocusScope {
         onToggleRequested: root.sidebarCollapsed = !root.sidebarCollapsed
     }
 
-    // Visible only while the sidebar is collapsed.
     Item {
         id: expandToggle
         anchors.left: sidebar.right

@@ -128,11 +128,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "data: %s\n\n", idData)
 	flusher.Flush()
 
-	// Tool-call loop: run the provider, then if it asked for tool calls,
-	// execute them, append the results to the in-memory message slice,
-	// and rerun. Stop on max iterations or when the model returns no more
-	// tool calls. tool calls / results are NOT persisted in history — only
-	// the concatenated assistant text is.
+	// Tool calls / results stay in-memory only — history persists just the
+	// concatenated assistant text.
 	const maxIterations = 5
 	tools := providerTools(s.tools.List())
 	opts := provider.ChatOptions{Tools: tools}
@@ -437,8 +434,7 @@ type toolCallRequest struct {
 }
 
 // handleToolCall is a thin debug/test path: invoke a tool by name with no
-// LLM involvement. The chat endpoint will route tool calls through here too
-// once provider tool-calling is wired up.
+// LLM involvement.
 func (s *Server) handleToolCall(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
 	var req toolCallRequest

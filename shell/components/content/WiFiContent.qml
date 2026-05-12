@@ -539,8 +539,7 @@ Item {
                     delegate: Item {
                         id: delegateItem
                         width: networkList.width
-                        
-                        // Explicit properties to pass into the custom component
+
                         property var itemData: modelData
                         property int itemIndex: index
                         

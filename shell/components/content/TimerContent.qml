@@ -200,7 +200,6 @@ Item {
                 return
             }
 
-            // Idle
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                 root.startFromInput()
                 event.accepted = true
@@ -232,7 +231,6 @@ Item {
             }
         }
 
-        // ────────────────────────── Idle layout ──────────────────────────
         ColumnLayout {
             id: idleLayout
             anchors.centerIn: parent
@@ -442,7 +440,6 @@ Item {
             }
         }
 
-        // ────────────────────────── Running layout ──────────────────────────
         RowLayout {
             id: runningLayout
             anchors.centerIn: parent
@@ -675,7 +672,6 @@ Item {
             }
         }
 
-        // ────────────────────────── Alerting layout ──────────────────────────
         RowLayout {
             id: alertingLayout
             anchors.centerIn: parent

@@ -84,7 +84,5 @@ QtObject {
         if ("kerning" in style)           target.font.kerning = style.kerning;
         if ("letterSpacing" in style)     target.font.letterSpacing = style.letterSpacing;
         if ("hinting" in style)           target.font.hintingPreference = style.hinting;
-        // Text.NativeRendering not needed; Qt 6 defaults are fine
-        // if ("renderType" in target) target.renderType = Text.NativeRendering;
     }
 }

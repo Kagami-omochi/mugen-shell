@@ -59,7 +59,6 @@ Item {
         yScale: root.pulseScale
     }
 
-    // Outer halo — softer blob giving the orb a subtle glowing field.
     Common.BlobEffect {
         id: halo
         visible: root.showHalo
@@ -78,7 +77,6 @@ Item {
         Behavior on baseOpacity { NumberAnimation { duration: 600; easing.type: Easing.InOutCubic } }
     }
 
-    // Core blob — the orb itself
     Common.BlobEffect {
         anchors.fill: parent
         blobColor: root.orbColor

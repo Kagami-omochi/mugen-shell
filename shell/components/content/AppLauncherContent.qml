@@ -616,7 +616,6 @@ FocusScope {
 
                     property bool isCurrentItem: GridView.isCurrentItem
 
-                    // modelData passthrough for custom components
                     property var wrapperModelData: {
                         if (typeof modelData !== 'undefined') {
                             return modelData
