@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Io
 import "../../../lib" as Theme
 
@@ -26,6 +27,27 @@ Rectangle {
 
     property var formCommands: []
     property string addCommandText: ""
+
+    // Suggestion pool built from list-apps.py. Each entry is
+    // { binary: "firefox", display: "Firefox" }; matched against the user's
+    // current addCommandText (substring of either field, case-insensitive).
+    property var suggestionPool: []
+
+    readonly property var filteredSuggestions: {
+        let q = (section.addCommandText || "").trim().toLowerCase()
+        if (!q || section.suggestionPool.length === 0) return []
+        let owned = {}
+        for (let i = 0; i < formCommands.length; i++) owned[formCommands[i]] = true
+        let out = []
+        for (let i = 0; i < section.suggestionPool.length && out.length < 8; i++) {
+            let s = section.suggestionPool[i]
+            if (owned[s.binary]) continue
+            if (s.binary.toLowerCase().indexOf(q) >= 0 || s.display.toLowerCase().indexOf(q) >= 0) {
+                out.push(s)
+            }
+        }
+        return out
+    }
 
     readonly property int expandedHeight: 64 + contentColumn.implicitHeight + 16
 
@@ -162,7 +184,42 @@ Rectangle {
         addCommandText = ""
     }
 
-    Component.onCompleted: reload()
+    Process {
+        id: appsProcess
+        running: false
+        property string buf: ""
+        command: ["python3", Quickshell.shellDir + "/scripts/list-apps.py"]
+        stdout: SplitParser { onRead: data => appsProcess.buf += data }
+        onRunningChanged: { if (running) buf = "" }
+        onExited: (exitCode) => {
+            if (exitCode !== 0 || !appsProcess.buf) return
+            try {
+                let arr = JSON.parse(appsProcess.buf)
+                let pool = []
+                let seen = {}
+                for (let i = 0; i < arr.length; i++) {
+                    let app = arr[i]
+                    if (!app || !app.exec) continue
+                    // Extract binary basename from `exec` (e.g. "/usr/bin/firefox %u" → "firefox").
+                    let tokens = String(app.exec).trim().split(/\s+/)
+                    if (tokens.length === 0) continue
+                    let first = tokens[0]
+                    let slash = first.lastIndexOf("/")
+                    let bin = slash >= 0 ? first.substring(slash + 1) : first
+                    if (!bin || seen[bin]) continue
+                    seen[bin] = true
+                    pool.push({ binary: bin, display: app.name || bin })
+                }
+                pool.sort((a, b) => a.binary.localeCompare(b.binary))
+                section.suggestionPool = pool
+            } catch (e) {}
+        }
+    }
+
+    Component.onCompleted: {
+        reload()
+        appsProcess.running = true
+    }
 
     MouseArea {
         id: header
@@ -380,6 +437,75 @@ Rectangle {
                     enabled: parent.enabled
                     cursorShape: Qt.PointingHandCursor
                     onClicked: section.addCommand()
+                }
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: suggestionList.contentHeight + 12
+            visible: section.filteredSuggestions.length > 0
+            radius: 8
+            color: section.theme ? section.theme.surfaceInsetSubtle : Qt.rgba(0, 0, 0, 0.3)
+            border.width: 1
+            border.color: section.theme ? section.theme.surfaceBorder : Qt.rgba(1, 1, 1, 0.12)
+            clip: true
+
+            ListView {
+                id: suggestionList
+                anchors.fill: parent
+                anchors.margins: 6
+                spacing: 0
+                interactive: false  // small list, no need to scroll
+                model: section.filteredSuggestions
+
+                delegate: Rectangle {
+                    required property var modelData
+                    width: suggestionList.width
+                    height: 24
+                    radius: 4
+                    color: suggMouse.containsMouse
+                        ? (section.theme ? section.theme.chipActiveBg : Qt.rgba(0.45, 0.45, 0.60, 0.25))
+                        : "transparent"
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
+
+                        Text {
+                            text: parent.parent.modelData.binary
+                            color: section.theme ? section.theme.textPrimary : Qt.rgba(0.91, 0.91, 0.94, 0.92)
+                            font.pixelSize: 11
+                            font.family: "M PLUS 2"
+                            font.weight: Font.Medium
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            text: "— " + parent.parent.modelData.display
+                            color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.70)
+                            font.pixelSize: 10
+                            font.family: "M PLUS 2"
+                            opacity: 0.7
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    MouseArea {
+                        id: suggMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            section.addCommandText = parent.modelData.binary
+                            section.addCommand()
+                            section.bump()
+                        }
+                    }
                 }
             }
         }

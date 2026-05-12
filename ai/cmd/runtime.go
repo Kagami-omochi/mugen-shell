@@ -20,12 +20,16 @@ import (
 // conventions here lets each tool's description stay short.
 const toolingSystemPrompt = `You can control the mugen-shell desktop through function-calling tools.
 
-Conventions for all tool calls:
-- Tool results that start with "error:" are failures. Surface the message verbatim instead of claiming success or silently retrying. The user may need to fix something (missing hardware, missing allowlist entry, etc.).
-- Tools whose description starts with "[DESTRUCTIVE]" (and app_launch for unfamiliar commands) must be confirmed in plain language first: describe what you are about to do, wait for the user's explicit confirmation in their next message, and only then call the tool. Never call a destructive tool on the same turn as the request.
+How to handle tool results:
+- Tool results are diagnostic strings (JSON, IDs, status codes, paths, error text). NEVER paste them back to the user verbatim. Read what happened, then reply in your own natural conversational style. Phrases like "{toggled:true}" or "panel_open returned success" do not belong in a reply to the user.
+- When a result starts with "error:" the action did NOT happen. Stop and tell the user in plain language what failed and why. Don't claim success, don't silently retry, and don't quietly pivot to another tool without acknowledging the failure first.
+- For errors mentioning "disabled in [tools].disabled_categories": the user turned off that whole tool category. Tell them clearly which category is off and point them at Settings → AI / Yura → Tool categories to re-enable it. After that you may suggest a workaround if one fits.
+- For errors mentioning "not in allowed_commands" or "app_launch allowlist": the command is not in the allowlist. Tell the user the command is blocked and suggest they add it via Settings → AI / Yura → App launcher allowlist (the Edit toml button in Personality is the escape hatch).
+
+When to act:
+- Tools marked "[DESTRUCTIVE]" (and app_launch for unfamiliar commands) need plain-language confirmation first: describe what you are about to do, wait for the user's explicit "yes" in their next message, and only then call the tool. Never call a destructive tool on the same turn as the request.
 - Read-only and reversible tools (read*, get*, list*, toggle, music, theme/wallpaper switching, panel open) fire immediately when the user asks.
-- Power actions (lock / suspend / logout / reboot / shutdown) are intentionally NOT exposed as tools. If the user asks for one, tell them to use the Power Menu directly.
-- For app_launch: if the user has configured an allowlist and the command isn't in it, the result will be "error: ... not in allowed_commands" — tell the user the command is blocked and suggest adding it to their config.`
+- Power actions (lock / suspend / logout / reboot / shutdown) are intentionally NOT exposed as tools. If the user asks for one, tell them to use the Power Menu directly.`
 
 type runtimeContext struct {
 	Cfg      config.Config
@@ -48,16 +52,26 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 	if model == "" {
 		model = state.LoadModel()
 	}
-	system := systemOverride
-	if system == "" {
-		system = assemblePersona(cfg.Personality)
+	persona := systemOverride
+	if persona == "" {
+		persona = assemblePersona(cfg.Personality)
 	}
-	// Always prepend tooling guidance so the model knows when to call
-	// shell tools vs. ask first. Personality stays the user's domain.
-	if system != "" {
-		system = toolingSystemPrompt + "\n\n" + system
+
+	// Disabled tool categories are surfaced explicitly: filtering them out of
+	// List() saves tokens, but the model never realises they exist, so it
+	// "successfully" pivots to a different tool without telling the user. A
+	// short note makes Yura proactively explain that <category> is off.
+	tooling := toolingSystemPrompt
+	if len(cfg.Tools.DisabledCategories) > 0 {
+		tooling += "\n\nCurrently disabled tool categories: " + strings.Join(cfg.Tools.DisabledCategories, ", ") +
+			". If the user asks for something in one of these categories, tell them the category is off and point them at Settings → AI / Yura → Tool categories before doing anything else (no silent pivot to another tool)."
+	}
+
+	var system string
+	if persona != "" {
+		system = tooling + "\n\n" + persona
 	} else {
-		system = toolingSystemPrompt
+		system = tooling
 	}
 
 	registry := buildRegistry(cfg, model)

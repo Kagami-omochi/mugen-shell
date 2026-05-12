@@ -93,7 +93,7 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 			return ""
 		}
 	}
-	return fmt.Sprintf("error: %q is not in [tools.app_launch].allowed_commands. Tell the user the command is blocked and ask them to add it to ~/.config/mugen-ai/config.toml if they want to allow it.", bin)
+	return fmt.Sprintf("error: %q is not in the app_launch allowlist. First tell the user the command is blocked, then suggest they add %q via Settings → AI / Yura → App launcher allowlist.", bin, bin)
 }
 
 func (r *Registry) List() []Tool {
@@ -136,7 +136,7 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	}
 
 	if cat := CategoryOf(name); r.disabledCats[cat] {
-		msg := fmt.Sprintf("error: tool category %q is disabled in [tools].disabled_categories. Tell the user the category is off and let them enable it in Settings → AI / Yura → Tool categories.", cat)
+		msg := fmt.Sprintf("error: tool category %q is disabled in [tools].disabled_categories. First tell the user the %s category is currently off and point them at Settings → AI / Yura → Tool categories to re-enable it. After that you may suggest a workaround if one fits.", cat, cat)
 		r.auditor.Log(name, args, msg, nil)
 		return msg, nil
 	}
