@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/tmy7533018/mugen-ai/internal/apps"
 )
 
 type Tool struct {
@@ -43,6 +45,7 @@ type Registry struct {
 	allowedApps  []string
 	disabledCats map[string]bool
 	auditor      *Auditor
+	apps         *apps.Resolver
 	tools        []Tool
 	mu           sync.RWMutex
 }
@@ -61,6 +64,7 @@ func New(qsConfig, scriptsDir string, allowedApps, disabledCategories []string, 
 		allowedApps:  allowedApps,
 		disabledCats: disabled,
 		auditor:      auditor,
+		apps:         apps.Load(),
 		tools:        builtin(),
 	}
 }
@@ -163,6 +167,24 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 		if rejection := r.rejectAppLaunch(args); rejection != "" {
 			r.auditor.Log(name, args, rejection, nil)
 			return rejection, nil
+		}
+		// Resolve a basename to the absolute Exec path from .desktop entries
+		// so off-$PATH binaries (e.g. /opt/zen-browser-bin/zen-bin) actually
+		// launch instead of Hyprland failing the exec silently.
+		if cmd, _ := args["cmd"].(string); cmd != "" {
+			tokens := strings.Fields(strings.TrimSpace(cmd))
+			if len(tokens) > 0 {
+				bin := filepath.Base(tokens[0])
+				if resolved := r.apps.Resolve(bin); resolved != "" {
+					resolvedTokens := strings.Fields(resolved)
+					if len(resolvedTokens) > 0 {
+						// Replace just the first token (the binary path); preserve
+						// any args the model passed (e.g. "kitty -e htop").
+						tokens[0] = resolvedTokens[0]
+						args["cmd"] = strings.Join(tokens, " ")
+					}
+				}
+			}
 		}
 	}
 
