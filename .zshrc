@@ -14,7 +14,7 @@ if [ -e /etc/profile.d/nix-daemon.sh ]; then
     . /etc/profile.d/nix-daemon.sh
 fi
 
-eval "$(starship init zsh)"
+command -v starship &>/dev/null && eval "$(starship init zsh)"
 
 # Show only current directory in window title
 function set_win_title(){
@@ -24,18 +24,17 @@ precmd_functions+=(set_win_title)
 
 
 ## Plugins section: Enable fish style features
-# Use syntax highlighting
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[[ -e /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] \
+  && source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
-# Use autosuggestion
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+[[ -e /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] \
+  && source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-# Use history substring search
-source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+[[ -e /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh ]] \
+  && source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
 
-# Use fzf
-source /usr/share/fzf/key-bindings.zsh
-source /usr/share/fzf/completion.zsh
+[[ -e /usr/share/fzf/key-bindings.zsh ]] && source /usr/share/fzf/key-bindings.zsh
+[[ -e /usr/share/fzf/completion.zsh ]]   && source /usr/share/fzf/completion.zsh
 
 # Arch Linux command-not-found support, you must have package pkgfile installed
 # https://wiki.archlinux.org/index.php/Pkgfile#.22Command_not_found.22_hook
@@ -202,17 +201,24 @@ fi
 
 ## Useful aliases
 
-# Replace ls with exa
-alias ls='exa -al --color=always --group-directories-first --icons' # preferred listing
-alias la='exa -a --color=always --group-directories-first --icons'  # all files and dirs
-alias ll='exa -l --color=always --group-directories-first --icons'  # long format
-alias lt='exa -aT --color=always --group-directories-first --icons' # tree listing
-alias l.='exa -ald --color=always --group-directories-first --icons .*' # show only dotfiles
-alias fastfetch='ascii_fetch'
+# Replace ls with exa when available
+if command -v exa &>/dev/null; then
+    alias ls='exa -al --color=always --group-directories-first --icons'
+    alias la='exa -a --color=always --group-directories-first --icons'
+    alias ll='exa -l --color=always --group-directories-first --icons'
+    alias lt='exa -aT --color=always --group-directories-first --icons'
+    alias l.='exa -ald --color=always --group-directories-first --icons .*'
+fi
+
+# ascii_fetch combines jp2a + fastfetch; fall through to bare fastfetch when
+# either is missing so the alias still does something useful.
+if command -v jp2a &>/dev/null && command -v fastfetch &>/dev/null; then
+    alias fastfetch='ascii_fetch'
+fi
 
 
-# Replace some more things with better alternatives
-alias cat='bat --style header --style snip --style changes --style header'
+# Replace cat with bat when available
+command -v bat &>/dev/null && alias cat='bat --style header --style snip --style changes --style header'
 [ ! -x /usr/bin/yay ] && [ -x /usr/bin/paru ] && alias yay='paru'
 
 # Common use
@@ -224,7 +230,13 @@ alias wget='wget -c '
 alias rmpkg="sudo pacman -Rdd"
 alias psmem='ps auxf | sort -nr -k 4'
 alias psmem10='ps auxf | sort -nr -k 4 | head -10'
-alias upd='/usr/bin/garuda-update'
+if command -v garuda-update &>/dev/null; then
+    alias upd='/usr/bin/garuda-update'
+elif command -v paru &>/dev/null; then
+    alias upd='paru -Syu'
+elif command -v nixos-rebuild &>/dev/null; then
+    alias upd='sudo nixos-rebuild switch --flake /etc/nixos'
+fi
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
@@ -232,9 +244,11 @@ alias .....='cd ../../../..'
 alias ......='cd ../../../../..'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
-alias grep='ugrep --color=auto'
-alias fgrep='ugrep -F --color=auto'
-alias egrep='ugrep -E --color=auto'
+if command -v ugrep &>/dev/null; then
+    alias grep='ugrep --color=auto'
+    alias fgrep='ugrep -F --color=auto'
+    alias egrep='ugrep -E --color=auto'
+fi
 alias hw='hwinfo --short'                          # Hardware Info
 alias big="expac -H M '%m\t%n' | sort -h | nl"     # Sort installed packages according to size in MB (expac must be installed)
 alias gitpkg='pacman -Q | grep -i "\-git" | wc -l' # List amount of -git packages
@@ -267,7 +281,7 @@ export MCFLY_FUZZY=true
 export MCFLY_RESULTS=20
 export MCFLY_INTERFACE_VIEW=BOTTOM
 export MCFLY_RESULTS_SORT=LAST_RUN
-eval "$(mcfly init zsh)"
+command -v mcfly &>/dev/null && eval "$(mcfly init zsh)"
 
 # ~/.zshrc
 ascii_fetch() {
@@ -319,7 +333,11 @@ ascii_fetch() {
   tput cnorm
 }
 
-ascii_fetch
+if command -v jp2a &>/dev/null && command -v fastfetch &>/dev/null; then
+    ascii_fetch
+elif command -v fastfetch &>/dev/null; then
+    command fastfetch
+fi
 
 # IME for fcitx5
 export GTK_IM_MODULE=fcitx
