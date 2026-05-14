@@ -12,10 +12,22 @@ import (
 	"strings"
 )
 
+// App is a parsed .desktop entry kept around so callers can do alias-style
+// resolution (e.g. user says "discord" but the underlying binary is
+// "flatpak" — the display name lets us still find the right Exec).
+type App struct {
+	Binary  string // basename of the first Exec token
+	Display string // user-facing "Name=" value
+	Exec    string // full Exec line, placeholders stripped
+}
+
 // Resolver caches a basename → absolute-exec map built from .desktop
-// entries discovered under XDG data dirs.
+// entries discovered under XDG data dirs, plus the parsed App list so we
+// can fall back to display-name matching when the typed cmd doesn't line
+// up with the underlying binary (Flatpak / AppImage launchers).
 type Resolver struct {
 	byBin map[string]string
+	apps  []App
 }
 
 // Load walks all XDG application dirs once and returns a populated
@@ -25,15 +37,15 @@ func Load() *Resolver {
 	for _, dir := range desktopDirs() {
 		files, _ := filepath.Glob(filepath.Join(dir, "*.desktop"))
 		for _, f := range files {
-			bin, exec, ok := parseDesktop(f)
+			app, ok := parseDesktop(f)
 			if !ok {
 				continue
 			}
 			// First win: respect the search order (user > system).
-			if _, seen := r.byBin[bin]; seen {
-				continue
+			if _, seen := r.byBin[app.Binary]; !seen {
+				r.byBin[app.Binary] = app.Exec
 			}
-			r.byBin[bin] = exec
+			r.apps = append(r.apps, app)
 		}
 	}
 	return r
@@ -49,16 +61,46 @@ func (r *Resolver) Resolve(basename string) string {
 	return r.byBin[basename]
 }
 
-func parseDesktop(path string) (string, string, bool) {
+// FindByDisplay finds an installed app whose display name matches `name`
+// case-insensitively. Used as a fallback when the user-typed command
+// doesn't match any binary basename (the common Flatpak case where the
+// "binary" is `flatpak` for every app). Returns the first exact display
+// match, then falls back to a single substring match if exactly one app
+// contains the needle in its name.
+func (r *Resolver) FindByDisplay(name string) (App, bool) {
+	if r == nil {
+		return App{}, false
+	}
+	needle := strings.ToLower(strings.TrimSpace(name))
+	if needle == "" {
+		return App{}, false
+	}
+	var subMatches []App
+	for _, a := range r.apps {
+		lname := strings.ToLower(a.Display)
+		if lname == needle {
+			return a, true
+		}
+		if strings.Contains(lname, needle) {
+			subMatches = append(subMatches, a)
+		}
+	}
+	if len(subMatches) == 1 {
+		return subMatches[0], true
+	}
+	return App{}, false
+}
+
+func parseDesktop(path string) (App, bool) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", "", false
+		return App{}, false
 	}
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
 	inMain := false
-	var exec string
+	var exec, name string
 	var noDisplay, hidden bool
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -81,6 +123,8 @@ func parseDesktop(path string) (string, string, bool) {
 		switch {
 		case strings.HasPrefix(line, "Exec=") && exec == "":
 			exec = strings.TrimPrefix(line, "Exec=")
+		case strings.HasPrefix(line, "Name=") && name == "":
+			name = strings.TrimPrefix(line, "Name=")
 		case line == "NoDisplay=true":
 			noDisplay = true
 		case line == "Hidden=true":
@@ -88,27 +132,34 @@ func parseDesktop(path string) (string, string, bool) {
 		}
 	}
 	if exec == "" || noDisplay || hidden {
-		return "", "", false
+		return App{}, false
 	}
 	tokens := strings.Fields(exec)
 	if len(tokens) == 0 {
-		return "", "", false
+		return App{}, false
 	}
 	binary := filepath.Base(tokens[0])
 	clean := stripPlaceholders(tokens)
 	if clean == "" {
-		return "", "", false
+		return App{}, false
 	}
-	return binary, clean, true
+	if name == "" {
+		name = binary
+	}
+	return App{Binary: binary, Display: name, Exec: clean}, true
 }
 
-// stripPlaceholders drops field codes (%u %U %f %F %i %c %k) defined by the
-// XDG desktop-entry spec. Backslash sequences other than the literals are
-// left alone — we don't need to fully tokenise the line.
+// stripPlaceholders drops field codes defined by the XDG desktop-entry spec
+// (%u %U %f %F %i %c %k %d %D %n %N %v %m) and Flatpak's file-forwarding
+// sentinels (@@, @@u). The sentinels are inert when no payload is attached
+// but some launchers treat them as unknown args; safer to drop them.
 func stripPlaceholders(tokens []string) string {
 	out := make([]string, 0, len(tokens))
 	for _, t := range tokens {
 		if len(t) == 2 && t[0] == '%' {
+			continue
+		}
+		if t == "@@" || t == "@@u" {
 			continue
 		}
 		out = append(out, t)

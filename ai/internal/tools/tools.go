@@ -107,6 +107,26 @@ func (r *Registry) rejectAppLaunch(args map[string]any) string {
 			return ""
 		}
 	}
+	// Fallback: when the typed cmd doesn't line up with a real binary
+	// (Flatpak / AppImage launchers, where every app's "binary" is the
+	// launcher itself), look up the user-supplied name against the
+	// installed apps' display names. If we find one whose underlying
+	// binary IS in the allowlist, rewrite the cmd to the full Exec line
+	// and accept. This keeps the allowlist coarse-grained on the
+	// launcher binary (one "flatpak" entry covers every flatpak app the
+	// user installed) without giving up on natural-language requests.
+	if app, ok := r.apps.FindByDisplay(tokens[0]); ok {
+		aliasTokens := strings.Fields(app.Exec)
+		if len(aliasTokens) > 0 {
+			aliasBin := filepath.Base(aliasTokens[0])
+			for _, a := range r.allowedApps {
+				if a == aliasBin {
+					args["cmd"] = app.Exec
+					return ""
+				}
+			}
+		}
+	}
 	return fmt.Sprintf("error: %q is not in the app launcher allowlist. Allowed apps right now: %s. If one of those is the same app under a different name (e.g. user said \"zenbrowser\" but the binary is \"zen-bin\"), retry app_launch with that binary. Otherwise tell the user the app is not allowed, then immediately call panel_open(name=\"settings\") so they can enable %q via AI / Yura → Allowed apps.", bin, strings.Join(r.allowedApps, ", "), bin)
 }
 
