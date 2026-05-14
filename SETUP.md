@@ -168,11 +168,11 @@ Install the system stack with pacman before the first switch:
 
 ```bash
 yay -S hyprland quickshell hypridle hyprlock zsh kitty starship libnotify \
-       pipewire pipewire-pulse pavucontrol cava playerctl pamixer \
+       pipewire pipewire-pulse pavucontrol cava playerctl \
        networkmanager network-manager-applet bluez bluez-utils \
        fcitx5 fcitx5-mozc fcitx5-im fcitx5-configtool \
        awww mpvpaper ffmpeg matugen-bin socat \
-       grim slurp wl-clipboard cliphist imv curl \
+       grim slurp wl-clipboard cliphist imv curl jq xdg-utils brightnessctl \
        zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search fzf \
        eza bat ugrep fastfetch jp2a thunar \
        ttf-mplus-nerd bibata-cursor-theme colloid-gtk-theme-git \
