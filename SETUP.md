@@ -260,13 +260,20 @@ models = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-7"]
 # Settings → AI / Yura → Allowed apps picker is the easy way to fill
 # this in, but you can hand-edit too.
 allowed_commands = ["firefox", "kitty", "code"]
+
+[tools]
+# Tool categories to hide from Yura (audio / music / brightness /
+# theme / wallpaper / notification / timer / calendar / panel / app).
+# Empty = every category enabled. Toggle via Settings → AI / Yura →
+# Tool categories.
+disabled_categories = []
 ```
 
 - **`[personality]`** — `name`/`tone`/`language` build the auto-header; `system_prompt` is your free-form append. Empty fields are skipped.
 - **`[provider.google].models`** — enables Gemini (requires `GEMINI_API_KEY`). Legacy single-string `model` is still honoured when `models` is empty.
 - **`[provider.openai]`** — enables any OpenAI-compatible provider. Activated when either `OPENAI_API_KEY` is set (cloud providers) or `base_url` points at a local server. `models` is optional; when empty the provider asks the backend's `/v1/models` endpoint.
 - **`[provider.anthropic].models`** — enables Claude (requires `ANTHROPIC_API_KEY`). Omit `models` to default to `claude-haiku-4-5`. Recommended for tool-calling (fast, accurate, low cost).
-- **`[tools.app_launch].allowed_commands`** — strict allowlist for the `app_launch` tool. Empty (or block omitted) = no apps can be launched. Binary basename match; the backend resolves the basename to the real Exec path from the matching `.desktop` entry so off-`$PATH` binaries (like Zen Browser's `/opt/zen-browser-bin/zen-bin`) launch correctly.
+- **`[tools.app_launch].allowed_commands`** — strict allowlist for the `app_launch` tool. Empty (or block omitted) = no apps can be launched. Binary basename match; the backend resolves the basename to the real Exec path from the matching `.desktop` entry so off-`$PATH` binaries (like Zen Browser's `/opt/zen-browser-bin/zen-bin`) launch correctly. Flatpak apps whose binary is `flatpak` rather than the app name (Discord, Spotify, …) are recognised by display-name fallback: as long as `flatpak` is in this list, asking Yura for "Discord" finds the matching `.desktop` entry and launches via the full Exec line.
 - **`[tools].disabled_categories`** — list any of `audio music brightness theme wallpaper notification timer calendar panel app` to hide that group of tools from Yura.
 
 ### Provider API keys
