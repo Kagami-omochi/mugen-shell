@@ -245,6 +245,9 @@ system_prompt = "You are a helpful desktop assistant. Be concise."
 [provider.google]
 models = ["gemini-2.5-flash"]
 
+[provider.anthropic]
+models = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-7"]
+
 [provider.openai]
 # Any OpenAI-compatible backend: OpenAI, OpenRouter, LM Studio, vLLM, ...
 # base_url = "https://api.openai.com/v1"        # OpenAI itself
