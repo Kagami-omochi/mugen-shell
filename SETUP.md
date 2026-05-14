@@ -348,9 +348,9 @@ Most panel keybinds dispatch through `shell/scripts/mugen-shell-ipc.sh` over a U
 
 | Keybinding | Action |
 |-----------|--------|
-| `Super + Enter` | Terminal (Kitty) |
-| `Super + N` | File manager (Thunar) |
-| `Super + B` | Browser (Zen Browser) |
+| `Super + Enter` | Terminal (`$terminal` in `autostart.conf`, default: kitty) |
+| `Super + N` | File manager (`$fileManager`, default: thunar) |
+| `Super + B` | Browser (`$browser`, default: firefox) |
 | `Super + Backspace` | Close active window |
 | `Super + 1-5` | Switch workspace |
 | `Super + Shift + 1-5` | Move window to workspace (silent) |
