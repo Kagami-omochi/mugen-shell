@@ -6,7 +6,7 @@
     "gradientEnabled": true
   },
   "batteryIndicator": {
-    "enabled": true
+    "enabled": false
   },
   "animations": {
     "speed": "normal",

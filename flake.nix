@@ -51,7 +51,9 @@
           # The Quickshell QML tree (UI code, scripts, assets, default
           # settings). No build step — just gets copied into the Nix
           # store so home-manager can symlink the result into
-          # ~/.config/quickshell/mugen-shell.
+          # ~/.config/quickshell/mugen-shell. The hypr/ snippet is also
+          # exposed so users with their own hyprland.conf can grab it
+          # via `$(nix path-info .#mugen-shell)/hypr/configs/...`.
           mugen-shell = pkgs.runCommand "mugen-shell-0.1.0" {
             meta = {
               description = "Quickshell desktop UI for mugen-shell";
@@ -61,6 +63,8 @@
           } ''
             mkdir -p $out
             cp -r ${./shell}/. $out/
+            mkdir -p $out/hypr/configs
+            cp ${./system/hypr/configs/mugen-shell.conf} $out/hypr/configs/mugen-shell.conf
           '';
 
           default = mugen-shell;
