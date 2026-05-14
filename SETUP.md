@@ -270,6 +270,7 @@ disabled_categories = []
 ```
 
 - **`[personality]`** — `name`/`tone`/`language` build the auto-header; `system_prompt` is your free-form append. Empty fields are skipped.
+- **`[provider.ollama]`** — local Ollama is enabled out of the box at `http://localhost:11434`. Override `host` only if your Ollama daemon lives elsewhere.
 - **`[provider.google].models`** — enables Gemini (requires `GEMINI_API_KEY`). Legacy single-string `model` is still honoured when `models` is empty.
 - **`[provider.openai]`** — enables any OpenAI-compatible provider. Activated when either `OPENAI_API_KEY` is set (cloud providers) or `base_url` points at a local server. `models` is optional; when empty the provider asks the backend's `/v1/models` endpoint.
 - **`[provider.anthropic].models`** — enables Claude (requires `ANTHROPIC_API_KEY`). Omit `models` to default to `claude-haiku-4-5`. Recommended for tool-calling (fast, accurate, low cost).
