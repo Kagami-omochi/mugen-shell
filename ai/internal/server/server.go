@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/tmy7533018/mugen-ai/internal/history"
+	"github.com/tmy7533018/mugen-ai/internal/mcp"
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/state"
 	"github.com/tmy7533018/mugen-ai/internal/store"
@@ -20,11 +21,12 @@ type Server struct {
 	history  *history.History
 	store    *store.Store
 	tools    *tools.Registry
+	mcp      *mcp.Manager
 	events   *eventBus
 }
 
-func New(registry *provider.Registry, hist *history.History, st *store.Store, t *tools.Registry) *Server {
-	return &Server{registry: registry, history: hist, store: st, tools: t, events: newEventBus()}
+func New(registry *provider.Registry, hist *history.History, st *store.Store, t *tools.Registry, m *mcp.Manager) *Server {
+	return &Server{registry: registry, history: hist, store: st, tools: t, mcp: m, events: newEventBus()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -45,6 +47,8 @@ func (s *Server) Routes() http.Handler {
 
 	mux.HandleFunc("GET /tools", s.handleListTools)
 	mux.HandleFunc("POST /tools/call", s.handleToolCall)
+
+	mux.HandleFunc("GET /mcp/servers", s.handleListMCPServers)
 
 	mux.HandleFunc("GET /config", s.handleGetConfig)
 	mux.HandleFunc("PUT /config", s.handlePutConfig)
@@ -437,6 +441,19 @@ func writeJSON(w http.ResponseWriter, v any) {
 
 func (s *Server) handleListTools(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{"tools": s.tools.List()})
+}
+
+// handleListMCPServers reports the startup outcome of each configured MCP
+// server (connected / failed / disabled) so the Settings GUI can show it.
+func (s *Server) handleListMCPServers(w http.ResponseWriter, _ *http.Request) {
+	var statuses []mcp.ServerStatus
+	if s.mcp != nil {
+		statuses = s.mcp.Statuses()
+	}
+	if statuses == nil {
+		statuses = []mcp.ServerStatus{}
+	}
+	writeJSON(w, map[string]any{"servers": statuses})
 }
 
 func providerTools(in []tools.Tool) []provider.Tool {

@@ -338,6 +338,7 @@ systemctl --user restart mugen-ai.service
 | GET | `/events` | Server-Sent Events stream of state changes (new conversations / messages) for live UI sync |
 | GET | `/tools` | List the tools the backend exposes to the LLM — built-in shell tools plus any MCP server tools |
 | POST | `/tools/call` | Debug path: invoke a tool by name with no LLM involvement. Body: `{name, args}` |
+| GET | `/mcp/servers` | Startup status of each configured MCP server (`{name, connected, tool_count, error, disabled}`) |
 | GET | `/config` | Read the on-disk config plus an `api_key_configured` map (provider env-var presence, value never exposed) |
 | PUT | `/config` | Replace the on-disk config atomically. The Settings GUI uses this; response is `{saved: true, restart_required: true}` |
 | POST | `/config/restart` | Bounce the systemd unit so changes from `/config` take effect. Requires the service to be managed by systemd |
