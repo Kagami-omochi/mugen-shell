@@ -440,7 +440,7 @@ Rectangle {
                                 radius: 7
                                 color: section.theme ? section.theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
                                 y: 3
-                                x: pill.on ? pill.parent.width - width - 3 : 3
+                                x: pill.on ? pill.width - width - 3 : 3
                                 Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                             }
 
