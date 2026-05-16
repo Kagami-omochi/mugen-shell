@@ -53,6 +53,7 @@ Set up alongside mugen-shell via NixOS, Arch + Nix, or `make install` — see [S
 - **Strict-by-default allowed-apps gate**: the picker shows your installed desktop apps, and until you enable one Yura can't open anything. Shell metacharacters (`; | & $` etc.) are always rejected so an allowed app can't smuggle in a shell injection.
 - **Per-category tool toggles** (audio, music, brightness, theme, wallpaper, notifications, timer, calendar, panels, app launcher) — disabled categories vanish from Yura's tool list, and Yura proactively tells you when you ask for something turned off
 - Natural-language shell control via function-calling tools — see *Shell control by chat* below
+- **External MCP servers** — point Yura at any [Model Context Protocol](https://modelcontextprotocol.io) server (memory, filesystem, GitHub, …) in the config; its tools merge into the same gated tool set, and live connection status shows under Settings → AI / Yura → MCP servers
 
 #### Shell control by chat
 
@@ -77,6 +78,8 @@ plain language in chat first — no modal popups.
 | Panels | open named panel, close any panel |
 
 Each row above can be turned off as a whole category in Settings → AI / Yura → Tool categories, and app launches are gated by the Allowed apps picker (so "launch firefox" only works once you've enabled firefox there).
+
+Yura's tools aren't limited to the table above — add any **MCP server** under `[mcp.servers.*]` in the config (memory, filesystem, GitHub, …) and its tools merge into the same gated set, passing through the per-category gate, audit log, and result sanitisation. See [SETUP.md](SETUP.md#mcp-servers).
 
 Power actions (lock / suspend / logout / reboot / shutdown) intentionally stay out of Yura's reach — drive those from the Power Menu directly.
 

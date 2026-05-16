@@ -290,6 +290,8 @@ args = ["-y", "@modelcontextprotocol/server-memory"]
 # disabled = false   # keep the entry on file but skip spawning it
 ```
 
+`command` must be on the service's `PATH`, and mugen-ai bundles no server runtimes — an `npx`-based server needs Node.js installed, a `uvx`-based one needs [uv](https://docs.astral.sh/uv/), and so on. Nix users should add the runtime (e.g. `nodejs`) to their `home.packages`.
+
 Each server is spawned as a stdio subprocess when mugen-ai starts. Its tools are merged under a `<name>__<tool>` prefix (`memory__read_graph`, `filesystem__read_file`), so the server name doubles as a tool category — disable a whole server from Yura by adding its name to `[tools].disabled_categories`. Use a short lowercase server name with no underscores so the prefix stays unambiguous. The same security gates as the built-in tools apply (audit log, category gate, result sanitisation).
 
 A server that fails to spawn or finish the handshake is logged to the journal and skipped; the rest still load. If a connected server later crashes, it is re-dialed automatically the next time one of its tools is used. Restart `mugen-ai.service` after editing to pick up server changes.
