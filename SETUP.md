@@ -275,7 +275,24 @@ disabled_categories = []
 - **`[provider.openai]`** — enables any OpenAI-compatible provider. Activated when either `OPENAI_API_KEY` is set (cloud providers) or `base_url` points at a local server. `models` is optional; when empty the provider asks the backend's `/v1/models` endpoint.
 - **`[provider.anthropic].models`** — enables Claude (requires `ANTHROPIC_API_KEY`). Omit `models` to default to `claude-haiku-4-5`. Recommended for tool-calling (fast, accurate, low cost).
 - **`[tools.app_launch].allowed_commands`** — strict allowlist for the `app_launch` tool. Empty (or block omitted) = no apps can be launched. Binary basename match; the backend resolves the basename to the real Exec path from the matching `.desktop` entry so off-`$PATH` binaries (like Zen Browser's `/opt/zen-browser-bin/zen-bin`) launch correctly. Flatpak apps whose binary is `flatpak` rather than the app name (Discord, Spotify, …) are recognised by display-name fallback: as long as `flatpak` is in this list, asking Yura for "Discord" finds the matching `.desktop` entry and launches via the full Exec line.
-- **`[tools].disabled_categories`** — list any of `audio music brightness theme wallpaper notification timer calendar panel app` to hide that group of tools from Yura.
+- **`[tools].disabled_categories`** — list any of `audio music brightness theme wallpaper notification timer calendar panel app` to hide that group of tools from Yura. An MCP server name (see below) also works here as a category.
+- **`[mcp.servers.<name>]`** — registers an external [Model Context Protocol](https://modelcontextprotocol.io) server whose tools are merged into Yura's tool set; see *MCP servers* below.
+
+### MCP servers
+
+mugen-ai can pull tools from external [Model Context Protocol](https://modelcontextprotocol.io) servers — memory, filesystem, GitHub, and so on — and expose them to Yura alongside the built-in shell tools. Add one `[mcp.servers.<name>]` block per server:
+
+```toml
+[mcp.servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+# env = { MEMORY_FILE_PATH = "/home/you/.local/state/mugen-ai/memory.json" }
+# disabled = false   # keep the entry on file but skip spawning it
+```
+
+Each server is spawned as a stdio subprocess when mugen-ai starts. Its tools are merged under a `<name>__<tool>` prefix (`memory__read_graph`, `filesystem__read_file`), so the server name doubles as a tool category — disable a whole server from Yura by adding its name to `[tools].disabled_categories`. Use a short lowercase server name with no underscores so the prefix stays unambiguous. The same security gates as the built-in tools apply (audit log, category gate, result sanitisation).
+
+A server that fails to spawn or finish the handshake is logged to the journal and skipped; the rest still load. Restart `mugen-ai.service` after editing to pick up server changes.
 
 ### Provider API keys
 
@@ -319,7 +336,7 @@ systemctl --user restart mugen-ai.service
 | POST | `/conversations/{id}/select` | Make a conversation current |
 | DELETE | `/conversations/{id}` | Delete a conversation |
 | GET | `/events` | Server-Sent Events stream of state changes (new conversations / messages) for live UI sync |
-| GET | `/tools` | List the shell-control tools the backend exposes to the LLM |
+| GET | `/tools` | List the tools the backend exposes to the LLM — built-in shell tools plus any MCP server tools |
 | POST | `/tools/call` | Debug path: invoke a tool by name with no LLM involvement. Body: `{name, args}` |
 | GET | `/config` | Read the on-disk config plus an `api_key_configured` map (provider env-var presence, value never exposed) |
 | PUT | `/config` | Replace the on-disk config atomically. The Settings GUI uses this; response is `{saved: true, restart_required: true}` |
