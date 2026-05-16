@@ -47,6 +47,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	defer rt.Store.Close()
+	defer rt.MCP.Close()
 
 	srv := server.New(rt.Registry, rt.History, rt.Store, rt.Tools)
 

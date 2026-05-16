@@ -34,6 +34,7 @@ func runChat(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	defer rt.Store.Close()
+	defer rt.MCP.Close()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Printf("Chat with %s  (commands: exit, new)\n\n", rt.Model)

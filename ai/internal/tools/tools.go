@@ -7,12 +7,14 @@ package tools
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/tmy7533018/mugen-ai/internal/apps"
+	"github.com/tmy7533018/mugen-ai/internal/mcp"
 )
 
 type Tool struct {
@@ -37,6 +39,13 @@ type Tool struct {
 	// / launch / add / delete / clear) leaves this false and takes an
 	// exclusive write lock.
 	readonly bool
+
+	// kind selects the dispatch path. Empty is a built-in tool, routed by
+	// cmdTemplate (cmd) or `qs ipc call` (ipc); "mcp" routes to an external
+	// MCP server via mcpServer/mcpTool.
+	kind      string
+	mcpServer string // configured server name, for kind=="mcp"
+	mcpTool   string // un-prefixed tool name on that server
 }
 
 type Registry struct {
@@ -46,6 +55,7 @@ type Registry struct {
 	disabledCats map[string]bool
 	auditor      *Auditor
 	apps         *apps.Resolver
+	mcpClients   map[string]*mcp.Client
 	tools        []Tool
 	mu           sync.RWMutex
 }
@@ -66,6 +76,36 @@ func New(qsConfig, scriptsDir string, allowedApps, disabledCategories []string, 
 		auditor:      auditor,
 		apps:         apps.Load(),
 		tools:        builtin(),
+	}
+}
+
+// AttachMCP merges the tools advertised by every connected MCP server into
+// the registry. Each tool is exposed as "<server>__<tool>" so the server
+// name becomes its category — making it gateable via disabled_categories
+// like any built-in group. A tool whose prefixed name collides with an
+// existing tool is skipped. Call once, before serving.
+func (r *Registry) AttachMCP(m *mcp.Manager) {
+	if m == nil {
+		return
+	}
+	r.mcpClients = m.Clients()
+	for server, client := range r.mcpClients {
+		for _, def := range client.Tools() {
+			name := server + "__" + def.Name
+			if r.Find(name) != nil {
+				fmt.Fprintf(os.Stderr, "mcp[%s]: tool %q collides with an existing tool, skipping\n", server, name)
+				continue
+			}
+			r.tools = append(r.tools, Tool{
+				Name:        name,
+				Description: def.Description,
+				Parameters:  def.InputSchema,
+				readonly:    def.ReadOnly,
+				kind:        "mcp",
+				mcpServer:   server,
+				mcpTool:     def.Name,
+			})
+		}
 	}
 }
 
@@ -206,6 +246,25 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 				}
 			}
 		}
+	}
+
+	// MCP tools route to their server's JSON-RPC client. The category /
+	// audit / sanitize gates above (and below) apply unchanged — only the
+	// dispatch differs.
+	if t.kind == "mcp" {
+		client := r.mcpClients[t.mcpServer]
+		if client == nil {
+			msg := fmt.Sprintf("error: MCP server %q is not connected. Tell the user the server is unavailable.", t.mcpServer)
+			r.auditor.Log(name, args, msg, nil)
+			return msg, nil
+		}
+		out, err := client.CallTool(ctx, t.mcpTool, args)
+		res := strings.TrimSpace(out)
+		r.auditor.Log(name, args, res, err)
+		if err != nil {
+			return "", fmt.Errorf("%s failed: %w", name, err)
+		}
+		return sanitizeForLLM(res), nil
 	}
 
 	var cmdName string

@@ -9,6 +9,7 @@ import (
 
 	"github.com/tmy7533018/mugen-ai/internal/config"
 	"github.com/tmy7533018/mugen-ai/internal/history"
+	"github.com/tmy7533018/mugen-ai/internal/mcp"
 	"github.com/tmy7533018/mugen-ai/internal/provider"
 	"github.com/tmy7533018/mugen-ai/internal/state"
 	"github.com/tmy7533018/mugen-ai/internal/store"
@@ -40,6 +41,7 @@ type runtimeContext struct {
 	Store    *store.Store
 	History  *history.History
 	Tools    *tools.Registry
+	MCP      *mcp.Manager
 }
 
 // loadRuntimeContext is the shared `serve` / `chat` bootstrap. Caller closes rt.Store.
@@ -97,20 +99,47 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 		return nil, fmt.Errorf("init history: %w", err)
 	}
 
+	toolReg := tools.New(
+		cfg.Shell.QsConfig,
+		resolveScriptsDir(cfg.Shell.ScriptsDir),
+		cfg.Tools.AppLaunch.AllowedCommands,
+		cfg.Tools.DisabledCategories,
+		tools.NewAuditor(filepath.Join(stateDir, "audit.log")),
+	)
+
+	// Spawn any configured MCP servers and merge their tools in. Connect
+	// never fails outright — a broken server is logged and skipped — so the
+	// returned Manager is always safe to attach and to Close later.
+	mcpMgr := mcp.Connect(context.Background(), mcpServerConfigs(cfg.MCP))
+	toolReg.AttachMCP(mcpMgr)
+
 	return &runtimeContext{
 		Cfg:      cfg,
 		Model:    model,
 		Registry: registry,
 		Store:    st,
 		History:  hist,
-		Tools: tools.New(
-			cfg.Shell.QsConfig,
-			resolveScriptsDir(cfg.Shell.ScriptsDir),
-			cfg.Tools.AppLaunch.AllowedCommands,
-			cfg.Tools.DisabledCategories,
-			tools.NewAuditor(filepath.Join(stateDir, "audit.log")),
-		),
+		Tools:    toolReg,
+		MCP:      mcpMgr,
 	}, nil
+}
+
+// mcpServerConfigs adapts the config-file shape to the mcp package's own
+// ServerConfig so that package needn't import internal/config.
+func mcpServerConfigs(c config.MCP) map[string]mcp.ServerConfig {
+	if len(c.Servers) == 0 {
+		return nil
+	}
+	out := make(map[string]mcp.ServerConfig, len(c.Servers))
+	for name, s := range c.Servers {
+		out[name] = mcp.ServerConfig{
+			Command:  s.Command,
+			Args:     s.Args,
+			Env:      s.Env,
+			Disabled: s.Disabled,
+		}
+	}
+	return out
 }
 
 func resolveScriptsDir(configured string) string {
