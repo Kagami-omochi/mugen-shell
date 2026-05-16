@@ -12,6 +12,25 @@ type Config struct {
 	Provider    Provider    `toml:"provider" json:"provider"`
 	Shell       Shell       `toml:"shell" json:"shell"`
 	Tools       Tools       `toml:"tools" json:"tools"`
+	MCP         MCP         `toml:"mcp" json:"mcp"`
+}
+
+// MCP configures external Model Context Protocol servers whose tools are
+// merged into the registry alongside the built-in shell tools. Each server
+// is spawned as a subprocess at startup and its tools exposed under a
+// "<name>__<tool>" prefix so the server name doubles as a tool category.
+type MCP struct {
+	Servers map[string]MCPServer `toml:"servers" json:"servers"`
+}
+
+// MCPServer is one stdio MCP server entry. Command is the executable,
+// Args its arguments, Env extra variables layered onto the inherited
+// environment. Disabled keeps the entry in the file but skips spawning it.
+type MCPServer struct {
+	Command  string            `toml:"command" json:"command"`
+	Args     []string          `toml:"args" json:"args"`
+	Env      map[string]string `toml:"env" json:"env"`
+	Disabled bool              `toml:"disabled" json:"disabled"`
 }
 
 type Tools struct {
