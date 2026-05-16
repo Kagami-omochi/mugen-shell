@@ -55,7 +55,7 @@ type Registry struct {
 	disabledCats map[string]bool
 	auditor      *Auditor
 	apps         *apps.Resolver
-	mcpClients   map[string]*mcp.Client
+	mcp          *mcp.Manager
 	tools        []Tool
 	mu           sync.RWMutex
 }
@@ -88,8 +88,8 @@ func (r *Registry) AttachMCP(m *mcp.Manager) {
 	if m == nil {
 		return
 	}
-	r.mcpClients = m.Clients()
-	for server, client := range r.mcpClients {
+	r.mcp = m
+	for server, client := range m.Clients() {
 		for _, def := range client.Tools() {
 			name := server + "__" + def.Name
 			if r.Find(name) != nil {
@@ -252,13 +252,14 @@ func (r *Registry) Call(ctx context.Context, name string, args map[string]any) (
 	// audit / sanitize gates above (and below) apply unchanged — only the
 	// dispatch differs.
 	if t.kind == "mcp" {
-		client := r.mcpClients[t.mcpServer]
-		if client == nil {
+		if r.mcp == nil {
 			msg := fmt.Sprintf("error: MCP server %q is not connected. Tell the user the server is unavailable.", t.mcpServer)
 			r.auditor.Log(name, args, msg, nil)
 			return msg, nil
 		}
-		out, err := client.CallTool(ctx, t.mcpTool, args)
+		// Manager.Call re-dials transparently if the server has crashed
+		// since startup, so a one-off crash self-heals on next use.
+		out, err := r.mcp.Call(ctx, t.mcpServer, t.mcpTool, args)
 		res := strings.TrimSpace(out)
 		r.auditor.Log(name, args, res, err)
 		if err != nil {

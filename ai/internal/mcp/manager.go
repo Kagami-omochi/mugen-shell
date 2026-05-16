@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -33,8 +34,12 @@ type ServerStatus struct {
 
 // Manager owns the set of connected MCP clients for the process lifetime
 // and remembers the outcome of every configured server, connected or not.
+// A crashed server is re-dialed lazily on its next use; mu guards the
+// clients map against those concurrent swaps.
 type Manager struct {
+	mu       sync.Mutex
 	clients  map[string]*Client
+	configs  map[string]ServerConfig // immutable after Connect; for re-dial
 	statuses []ServerStatus
 }
 
@@ -43,7 +48,7 @@ type Manager struct {
 // so one broken entry can't stop mugen-ai from starting. Servers are
 // processed in name order for deterministic startup logs.
 func Connect(ctx context.Context, servers map[string]ServerConfig) *Manager {
-	m := &Manager{clients: map[string]*Client{}}
+	m := &Manager{clients: map[string]*Client{}, configs: servers}
 
 	names := make([]string, 0, len(servers))
 	for name := range servers {
@@ -99,16 +104,95 @@ func dial(ctx context.Context, name string, sc ServerConfig) (*Client, error) {
 	return client, nil
 }
 
-// Clients returns the connected servers keyed by configured name.
+// Clients returns the servers connected at startup, keyed by configured
+// name. Intended for the one-shot tool merge right after Connect, before
+// any re-dial can race the map.
 func (m *Manager) Clients() map[string]*Client { return m.clients }
 
-// Statuses returns the startup outcome of every configured server, in name
-// order.
-func (m *Manager) Statuses() []ServerStatus { return m.statuses }
+// Call dispatches a tool invocation to the named server. If the server has
+// crashed since startup it is re-dialed once and the call retried, so a
+// crash self-heals on next use instead of failing until mugen-ai restarts.
+func (m *Manager) Call(ctx context.Context, server, tool string, args map[string]any) (string, error) {
+	m.mu.Lock()
+	client := m.clients[server]
+	m.mu.Unlock()
+	if client == nil {
+		return "", fmt.Errorf("mcp server %q is not connected", server)
+	}
+
+	out, err := client.CallTool(ctx, tool, args)
+	if err == nil || !client.Closed() {
+		return out, err
+	}
+
+	fresh, derr := m.redial(ctx, server)
+	if derr != nil {
+		return "", fmt.Errorf("mcp server %q crashed; re-dial failed: %w", server, derr)
+	}
+	return fresh.CallTool(ctx, tool, args)
+}
+
+// redial spawns a fresh client for a crashed server and swaps it into the
+// clients map. configs is immutable after Connect, so it is read lock-free;
+// the brief lock only guards the map swap and resolves a concurrent re-dial.
+func (m *Manager) redial(ctx context.Context, server string) (*Client, error) {
+	sc, ok := m.configs[server]
+	if !ok {
+		return nil, fmt.Errorf("no configuration for server %q", server)
+	}
+	client, err := dial(ctx, server, sc)
+	if err != nil {
+		return nil, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if existing := m.clients[server]; existing != nil && !existing.Closed() {
+		client.Close() // another caller already recovered this server
+		return existing, nil
+	}
+	if old := m.clients[server]; old != nil {
+		old.Close()
+	}
+	m.clients[server] = client
+	fmt.Fprintf(os.Stderr, "mcp[%s]: re-dialed after crash (%d tools)\n", server, len(client.Tools()))
+	return client, nil
+}
+
+// Statuses returns the state of every configured server, in name order.
+// Connected state is read live so a crash — or recovery — since startup is
+// reflected; the startup error / disabled / tool-count baseline is kept for
+// servers that never had a live client.
+func (m *Manager) Statuses() []ServerStatus {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]ServerStatus, len(m.statuses))
+	copy(out, m.statuses)
+	for i := range out {
+		if out[i].Disabled {
+			continue
+		}
+		c := m.clients[out[i].Name]
+		if c == nil {
+			continue // startup failure; keep the baseline error
+		}
+		if c.Closed() {
+			out[i].Connected = false
+			out[i].Error = "connection lost since startup"
+		} else {
+			out[i].Connected = true
+			out[i].ToolCount = len(c.Tools())
+			out[i].Error = ""
+		}
+	}
+	return out
+}
 
 // Close terminates every connected server. Safe to call on a Manager with
 // no servers.
 func (m *Manager) Close() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	for _, c := range m.clients {
 		_ = c.Close()
 	}

@@ -278,3 +278,12 @@ func (c *Client) CallTool(ctx context.Context, name string, args map[string]any)
 }
 
 func (c *Client) Close() error { return c.tr.close() }
+
+// Closed reports whether the connection has dropped — the server exited or
+// the transport failed. A closed client cannot be revived; the Manager
+// re-dials a fresh one in its place.
+func (c *Client) Closed() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.closed
+}
