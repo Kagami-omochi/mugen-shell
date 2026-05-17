@@ -120,6 +120,7 @@ func (o *Ollama) Chat(ctx context.Context, model string, messages []Message, opt
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 
+	var toolCalls []ToolCall
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		if len(line) == 0 {
@@ -136,16 +137,21 @@ func (o *Ollama) Chat(ctx context.Context, model string, messages []Message, opt
 			continue
 		}
 
+		// Ollama streams a tool call on its own chunk ahead of the final
+		// done chunk, which carries none — so accumulate calls and hand
+		// the whole set over on the done chunk, where handleChat harvests
+		// ToolCalls. Emitting them on the streaming chunk would drop them.
+		for _, tc := range raw.Message.ToolCalls {
+			toolCalls = append(toolCalls, ToolCall{
+				ID:        fmt.Sprintf("call_%d_%d", time.Now().UnixNano(), len(toolCalls)),
+				Name:      tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			})
+		}
+
 		chunk := ChatChunk{Content: raw.Message.Content, Done: raw.Done}
-		if len(raw.Message.ToolCalls) > 0 {
-			chunk.ToolCalls = make([]ToolCall, 0, len(raw.Message.ToolCalls))
-			for i, tc := range raw.Message.ToolCalls {
-				chunk.ToolCalls = append(chunk.ToolCalls, ToolCall{
-					ID:        fmt.Sprintf("call_%d_%d", time.Now().UnixNano(), i),
-					Name:      tc.Function.Name,
-					Arguments: tc.Function.Arguments,
-				})
-			}
+		if raw.Done {
+			chunk.ToolCalls = toolCalls
 		}
 		if err := fn(chunk); err != nil {
 			return err
