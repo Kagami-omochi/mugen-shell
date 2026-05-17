@@ -47,8 +47,13 @@ PanelWindow {
 
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Top
+    // Exclusive (not OnDemand) while open: an OnDemand layer surface joins
+    // normal focus management, so a focus re-evaluation — e.g. an IME
+    // switch under focus_follows_mouse — can hand keyboard focus to whatever
+    // window the pointer happens to sit over. Exclusive holds the keyboard
+    // regardless of pointer position for as long as the panel is shown.
     WlrLayershell.keyboardFocus: yuraState.expanded
-        ? WlrKeyboardFocus.OnDemand
+        ? WlrKeyboardFocus.Exclusive
         : WlrKeyboardFocus.None
 
     mask: Region {
