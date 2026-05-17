@@ -43,6 +43,11 @@ FocusScope {
     property string responseDisplay: ""
     property bool displayingResponse: false
 
+    // Set from a tool_confirm SSE event while the backend is blocked waiting
+    // for approval of a destructive MCP tool. Shape: { confirm_id, name,
+    // arguments }. While set, a confirm strip covers the input pill.
+    property var pendingConfirm: null
+
     readonly property string idlePlaceholder: {
         if (!healthChecked) return "Ask anything…"
         if (!aiAvailable) return "mugen-ai is not running"
@@ -82,6 +87,22 @@ FocusScope {
         if (!streaming) return
         chatProcess.signal(15) // SIGTERM
         streaming = false
+        // A stopped turn drops its blocked tool prompt; the backend reads
+        // the disconnect as a denial, so the strip goes with it.
+        pendingConfirm = null
+    }
+
+    // resolveConfirm answers a pending tool-approval prompt so the blocked
+    // chat turn can run or skip the tool. Fire-and-forget — a lapsed prompt
+    // just 404s harmlessly.
+    function resolveConfirm(approved) {
+        if (!pendingConfirm) return
+        confirmProcess.payload = JSON.stringify({
+            confirm_id: pendingConfirm.confirm_id,
+            approved: approved
+        })
+        confirmProcess.running = true
+        pendingConfirm = null
     }
 
     function newChat() {
@@ -411,9 +432,143 @@ FocusScope {
                         }
                     }
                 }
+
+                // Tool-approval strip — covers the input pill while the
+                // backend is blocked on a destructive MCP tool. Approve /
+                // Deny answers it; the args are summarised on one line.
+                Rectangle {
+                    id: confirmStrip
+                    anchors.fill: parent
+                    radius: parent.radius
+                    visible: root.pendingConfirm !== null
+                    color: Qt.rgba(0.06, 0.05, 0.11, 0.93)
+                    border.width: 1
+                    border.color: Qt.rgba(0.95, 0.74, 0.42, 0.60)
+
+                    readonly property var pc: root.pendingConfirm || ({})
+                    readonly property string fullName: pc.name || ""
+                    readonly property int sep: fullName.indexOf("__")
+                    readonly property string serverName: sep > 0 ? fullName.substring(0, sep) : ""
+                    readonly property string toolName: sep > 0 ? fullName.substring(sep + 2) : fullName
+                    readonly property string argSummary: {
+                        let a = pc.arguments
+                        if (!a) return ""
+                        let parts = []
+                        for (let k of Object.keys(a)) {
+                            let v = a[k]
+                            parts.push(k + ": " + ((typeof v === "string") ? v : JSON.stringify(v)))
+                        }
+                        return parts.join("   ·   ")
+                    }
+
+                    // Eats stray clicks so they can't fall through to the
+                    // disabled input or the stop button beneath the strip.
+                    MouseArea { anchors.fill: parent }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: modeManager.scale(16)
+                        anchors.rightMargin: modeManager.scale(6)
+                        spacing: modeManager.scale(8)
+
+                        Text {
+                            text: "⚠"
+                            color: Qt.rgba(0.96, 0.78, 0.46, 0.95)
+                            font.pixelSize: modeManager.scale(14)
+                        }
+
+                        Text {
+                            text: confirmStrip.serverName !== ""
+                                ? (confirmStrip.serverName + " → " + confirmStrip.toolName)
+                                : confirmStrip.toolName
+                            color: root.theme ? root.theme.textPrimary : Qt.rgba(0.95, 0.93, 0.98, 0.95)
+                            font.pixelSize: modeManager.scale(13)
+                            font.family: "M PLUS 2"
+                            font.weight: Font.Medium
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            text: confirmStrip.argSummary
+                            color: root.theme ? root.theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.70)
+                            font.pixelSize: modeManager.scale(11)
+                            font.family: "M PLUS 2"
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: modeManager.scale(62)
+                            Layout.preferredHeight: modeManager.scale(28)
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: height / 2
+                            color: denyMouse.containsMouse ? Qt.rgba(0.85, 0.42, 0.42, 0.32) : Qt.rgba(0.85, 0.42, 0.42, 0.16)
+                            border.width: 1
+                            border.color: Qt.rgba(0.88, 0.50, 0.50, 0.45)
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Deny"
+                                color: Qt.rgba(0.96, 0.79, 0.79, 0.95)
+                                font.pixelSize: modeManager.scale(11)
+                                font.family: "M PLUS 2"
+                            }
+
+                            MouseArea {
+                                id: denyMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.resolveConfirm(false)
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: modeManager.scale(78)
+                            Layout.preferredHeight: modeManager.scale(28)
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: height / 2
+                            color: approveMouse.containsMouse
+                                ? (root.theme ? Qt.rgba(root.theme.glowPrimary.r, root.theme.glowPrimary.g, root.theme.glowPrimary.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                                : (root.theme ? Qt.rgba(root.theme.glowPrimary.r, root.theme.glowPrimary.g, root.theme.glowPrimary.b, 0.32) : Qt.rgba(0.65, 0.55, 0.85, 0.32))
+                            border.width: 1
+                            border.color: root.theme ? root.theme.glowPrimary : Qt.rgba(0.65, 0.55, 0.85, 0.9)
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Approve"
+                                color: root.theme ? root.theme.textPrimary : Qt.rgba(0.96, 0.95, 1.0, 0.98)
+                                font.pixelSize: modeManager.scale(11)
+                                font.family: "M PLUS 2"
+                                font.weight: Font.Medium
+                            }
+
+                            MouseArea {
+                                id: approveMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.resolveConfirm(true)
+                            }
+                        }
+                    }
+                }
             }
 
         }
+    }
+
+    // Posts an approval decision for a pending tool_confirm prompt.
+    Process {
+        id: confirmProcess
+        property string payload: ""
+        running: false
+        command: ["curl", "-sS", "--max-time", "5", "-X", "POST",
+                  root._baseUrl + "/chat/confirm",
+                  "-H", "Content-Type: application/json",
+                  "-d", payload]
     }
 
     Process {
@@ -442,6 +597,12 @@ FocusScope {
                         root.responseDisplay = "[error: " + obj.error + "]"
                         return
                     }
+                    // A destructive MCP tool blocks the turn until approved;
+                    // the strip must show even on the one-line bar.
+                    if (obj.tool_confirm) {
+                        root.pendingConfirm = obj.tool_confirm
+                        return
+                    }
                     // bar Spotlight is a one-line UX; tool calls / results
                     // are dropped here — the LLM's surrounding text already
                     // narrates the action ("音量を 30 にしたよ"). The
@@ -458,6 +619,9 @@ FocusScope {
 
         onExited: (exitCode) => {
             root.streaming = false
+            // The stream can end (timeout, error) with the strip still up;
+            // never leave a prompt the backend has already abandoned.
+            root.pendingConfirm = null
             if (exitCode !== 0 && root.responseDisplay.length === 0) {
                 root.responseDisplay = "[connection failed]"
             }

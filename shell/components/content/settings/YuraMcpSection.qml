@@ -64,12 +64,19 @@ Rectangle {
         section.statusText = "removed — Save & Apply to confirm"
     }
 
-    function setDisabled(name, off) {
+    // patchServer rebuilds the list with one field of one server changed,
+    // preserving every other field so a toggle never drops sibling state.
+    function patchServer(name, key, value) {
         let next = []
         for (let i = 0; i < servers.length; i++) {
             let s = servers[i]
             if (s.name === name) {
-                next.push({ name: s.name, command: s.command, args: s.args, env: s.env, disabled: off })
+                let copy = {
+                    name: s.name, command: s.command, args: s.args,
+                    env: s.env, disabled: s.disabled, trusted: s.trusted
+                }
+                copy[key] = value
+                next.push(copy)
             } else {
                 next.push(s)
             }
@@ -77,6 +84,10 @@ Rectangle {
         section.servers = next
         section.dirty = true
     }
+
+    function setDisabled(name, off) { patchServer(name, "disabled", off) }
+
+    function setTrusted(name, on) { patchServer(name, "trusted", on) }
 
     function parseEnv(text) {
         // One KEY=value per line; blank lines and lines without "=" are skipped.
@@ -108,7 +119,8 @@ Rectangle {
             command: toks[0],
             args: toks.slice(1),
             env: parseEnv(formEnv),
-            disabled: false
+            disabled: false,
+            trusted: false
         })
         section.servers = next
         section.dirty = true
@@ -124,6 +136,18 @@ Rectangle {
         section.saving = true
         section.statusText = "saving…"
         getCurrentProcess.running = true
+    }
+
+    // revert discards unsaved edits by reloading the server list from the
+    // backend — the undo for a mistaken remove or toggle.
+    function revert() {
+        if (saveProcess.running || getCurrentProcess.running) return
+        section.addingServer = false
+        section.formName = ""
+        section.formCommand = ""
+        section.formEnv = ""
+        section.statusText = "reverted unsaved changes"
+        loadConfigProcess.running = true
     }
 
     Behavior on height {
@@ -152,7 +176,8 @@ Rectangle {
                         command: s.command || "",
                         args: s.args || [],
                         env: s.env || ({}),
-                        disabled: !!s.disabled
+                        disabled: !!s.disabled,
+                        trusted: !!s.trusted
                     })
                 }
                 section.servers = list
@@ -203,7 +228,7 @@ Rectangle {
                 let m = {}
                 for (let i = 0; i < section.servers.length; i++) {
                     let s = section.servers[i]
-                    m[s.name] = { command: s.command, args: s.args, env: s.env, disabled: s.disabled }
+                    m[s.name] = { command: s.command, args: s.args, env: s.env, disabled: s.disabled, trusted: s.trusted }
                 }
                 cfg.mcp.servers = m
                 saveProcess.payload = JSON.stringify(cfg)
@@ -501,6 +526,61 @@ Rectangle {
                         opacity: failed ? 0.95 : 0.7
                         wrapMode: Text.WordWrap
                     }
+
+                    // Trusted toggle — on = this server's destructive tools
+                    // run without the per-call approval prompt.
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 2
+                        spacing: 8
+
+                        Rectangle {
+                            id: trustPill
+                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 18
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: 9
+
+                            readonly property bool on: !!serverRow.modelData.trusted
+
+                            color: trustPill.on
+                                ? Qt.rgba(0.95, 0.74, 0.42, 0.45)
+                                : Qt.rgba(0.3, 0.3, 0.36, 0.5)
+                            border.width: 1
+                            border.color: trustPill.on
+                                ? Qt.rgba(0.95, 0.74, 0.42, 0.95)
+                                : Qt.rgba(1, 1, 1, 0.10)
+                            Behavior on color { ColorAnimation { duration: 180 } }
+
+                            Rectangle {
+                                width: 12
+                                height: 12
+                                radius: 6
+                                color: section.theme ? section.theme.textPrimary : Qt.rgba(0.95, 0.95, 1.0, 0.95)
+                                y: 3
+                                x: trustPill.on ? trustPill.width - width - 3 : 3
+                                Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: section.setTrusted(serverRow.modelData.name, !trustPill.on)
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            text: "Trusted — run this server's tools without an approval prompt"
+                            color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.70)
+                            font.pixelSize: 10
+                            font.family: "M PLUS 2"
+                            opacity: trustPill.on ? 0.85 : 0.6
+                            wrapMode: Text.WordWrap
+                        }
+                    }
                 }
             }
         }
@@ -626,11 +706,12 @@ Rectangle {
 
                 Text {
                     Layout.fillWidth: true
-                    text: "Env (optional) — one KEY=value per line"
+                    text: "Env (optional) — KEY=value per line. Stored as plaintext in config.toml; use ${VAR} to read a secret from the environment instead."
                     color: section.theme ? section.theme.textSecondary : Qt.rgba(0.72, 0.72, 0.82, 0.70)
                     font.pixelSize: 10
                     font.family: "M PLUS 2"
                     opacity: 0.7
+                    wrapMode: Text.WordWrap
                 }
 
                 Rectangle {
@@ -771,6 +852,32 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     // Re-poll status only; never clobber unsaved edits to the list.
                     onClicked: { loadStatusProcess.running = true; section.bump() }
+                }
+            }
+
+            // Revert — discards unsaved edits; only shown when there are any.
+            Rectangle {
+                Layout.preferredWidth: 72
+                Layout.preferredHeight: 28
+                visible: section.dirty && !section.saving
+                radius: 14
+                color: revertMouse.containsMouse ? Qt.rgba(0.85, 0.55, 0.42, 0.32) : Qt.rgba(0.85, 0.55, 0.42, 0.18)
+                Behavior on color { ColorAnimation { duration: 150 } }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Revert"
+                    color: section.theme ? section.theme.textPrimary : Qt.rgba(0.92, 0.92, 0.96, 0.90)
+                    font.pixelSize: 11
+                    font.family: "M PLUS 2"
+                }
+
+                MouseArea {
+                    id: revertMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { section.revert(); section.bump() }
                 }
             }
 

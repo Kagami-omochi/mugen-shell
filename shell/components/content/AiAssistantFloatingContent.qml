@@ -54,6 +54,11 @@ FocusScope {
 
     readonly property bool isEmpty: messages.length === 0
 
+    // Set from a tool_confirm SSE event while the backend is blocked waiting
+    // for the user to approve a destructive MCP tool. Shape:
+    // { confirm_id, name, arguments }. Cleared the moment it is answered.
+    property var pendingConfirm: null
+
     function appendMessage(role, content) {
         let copy = messages.slice()
         copy.push({ role: role, content: content })
@@ -117,6 +122,19 @@ FocusScope {
         messages = copy
     }
 
+    // resolveConfirm answers a pending tool-approval prompt: it posts the
+    // decision so the blocked chat turn can run or skip the tool, then clears
+    // the card. Fire-and-forget — a lapsed prompt just 404s harmlessly.
+    function resolveConfirm(approved) {
+        if (!pendingConfirm) return
+        confirmProcess.payload = JSON.stringify({
+            confirm_id: pendingConfirm.confirm_id,
+            approved: approved
+        })
+        confirmProcess.running = true
+        pendingConfirm = null
+    }
+
     function sendMessage(text) {
         if (!text || streaming) return
         appendMessage("user", text)
@@ -136,6 +154,9 @@ FocusScope {
         if (!streaming) return
         chatProcess.signal(15)
         streaming = false
+        // A stopped turn drops its blocked tool prompt; the backend treats
+        // the disconnect as a denial, so the card must go with it.
+        pendingConfirm = null
     }
 
     function newChat() {
@@ -859,6 +880,209 @@ FocusScope {
         }
     }
 
+    // Tool-approval card. Surfaces a tool_confirm prompt above the input bar
+    // and stays up — the backend is blocked — until Approve / Deny answers it.
+    Rectangle {
+        id: confirmCard
+        anchors.left: inputBar.left
+        anchors.right: inputBar.right
+        anchors.bottom: inputBar.top
+        anchors.bottomMargin: modeManager.scale(14)
+        height: confirmCol.implicitHeight + modeManager.scale(28)
+        z: 6
+        visible: root.pendingConfirm !== null
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+        radius: modeManager.scale(16)
+        color: root.theme ? root.theme.surfaceInsetSubtle : Qt.rgba(0.07, 0.06, 0.11, 0.97)
+        // Amber border: a deliberate break from the purple chrome so the
+        // card reads as "this needs you" without the alarm of red.
+        border.width: 1
+        border.color: Qt.rgba(0.95, 0.74, 0.42, 0.55)
+
+        readonly property var pc: root.pendingConfirm || ({})
+        readonly property string fullName: pc.name || ""
+        readonly property int sep: fullName.indexOf("__")
+        readonly property string serverName: sep > 0 ? fullName.substring(0, sep) : ""
+        readonly property string toolName: sep > 0 ? fullName.substring(sep + 2) : fullName
+        readonly property var argKeys: pc.arguments ? Object.keys(pc.arguments) : []
+
+        ColumnLayout {
+            id: confirmCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: modeManager.scale(14)
+            spacing: modeManager.scale(8)
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: modeManager.scale(8)
+
+                Text {
+                    text: "⚠"
+                    color: Qt.rgba(0.96, 0.78, 0.46, 0.95)
+                    font.pixelSize: modeManager.scale(15)
+                }
+
+                Text {
+                    text: "Approval needed"
+                    color: root.theme ? root.theme.textPrimary : Qt.rgba(0.95, 0.93, 0.98, 0.95)
+                    font.pixelSize: modeManager.scale(13)
+                    font.family: "M PLUS 2"
+                    font.weight: Font.Medium
+                    font.letterSpacing: 0.3
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Rectangle {
+                    visible: confirmCard.serverName !== ""
+                    Layout.preferredHeight: modeManager.scale(18)
+                    Layout.preferredWidth: serverTag.implicitWidth + modeManager.scale(14)
+                    radius: height / 2
+                    color: root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.22) : Qt.rgba(0.65, 0.55, 0.85, 0.22)
+
+                    Text {
+                        id: serverTag
+                        anchors.centerIn: parent
+                        text: confirmCard.serverName
+                        color: root.theme ? root.theme.textSecondary : Qt.rgba(0.82, 0.80, 0.90, 0.9)
+                        font.pixelSize: modeManager.scale(10)
+                        font.family: "M PLUS 2"
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Yura wants to run " + confirmCard.toolName
+                color: root.theme ? root.theme.textSecondary : Qt.rgba(0.80, 0.80, 0.88, 0.88)
+                font.pixelSize: modeManager.scale(12)
+                font.family: "M PLUS 2"
+                wrapMode: Text.WordWrap
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                visible: confirmCard.argKeys.length > 0
+                Layout.preferredHeight: Math.min(argCol.implicitHeight, modeManager.scale(150)) + modeManager.scale(16)
+                radius: modeManager.scale(10)
+                color: Qt.rgba(0, 0, 0, 0.22)
+
+                Flickable {
+                    id: argFlick
+                    anchors.fill: parent
+                    anchors.margins: modeManager.scale(8)
+                    contentHeight: argCol.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    ColumnLayout {
+                        id: argCol
+                        width: argFlick.width
+                        spacing: modeManager.scale(5)
+
+                        Repeater {
+                            model: confirmCard.argKeys
+
+                            ColumnLayout {
+                                id: argRow
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 1
+
+                                Text {
+                                    text: argRow.modelData
+                                    color: root.theme ? root.theme.textFaint : Qt.rgba(0.62, 0.62, 0.72, 0.75)
+                                    font.pixelSize: modeManager.scale(10)
+                                    font.family: "M PLUS 2"
+                                    font.letterSpacing: 0.4
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: {
+                                        let v = confirmCard.pc.arguments[argRow.modelData]
+                                        return (typeof v === "string") ? v : JSON.stringify(v)
+                                    }
+                                    color: root.theme ? root.theme.textPrimary : Qt.rgba(0.92, 0.92, 0.96, 0.95)
+                                    font.pixelSize: modeManager.scale(12)
+                                    font.family: "M PLUS 2"
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: modeManager.scale(2)
+                spacing: modeManager.scale(8)
+
+                Item { Layout.fillWidth: true }
+
+                Rectangle {
+                    Layout.preferredWidth: modeManager.scale(86)
+                    Layout.preferredHeight: modeManager.scale(32)
+                    radius: height / 2
+                    color: denyMouse.containsMouse ? Qt.rgba(0.85, 0.42, 0.42, 0.30) : Qt.rgba(0.85, 0.42, 0.42, 0.15)
+                    border.width: 1
+                    border.color: Qt.rgba(0.88, 0.50, 0.50, 0.45)
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Deny"
+                        color: Qt.rgba(0.96, 0.79, 0.79, 0.95)
+                        font.pixelSize: modeManager.scale(12)
+                        font.family: "M PLUS 2"
+                    }
+
+                    MouseArea {
+                        id: denyMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.resolveConfirm(false)
+                    }
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: modeManager.scale(100)
+                    Layout.preferredHeight: modeManager.scale(32)
+                    radius: height / 2
+                    color: approveMouse.containsMouse
+                        ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.55) : Qt.rgba(0.65, 0.55, 0.85, 0.55))
+                        : (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.34) : Qt.rgba(0.65, 0.55, 0.85, 0.34))
+                    border.width: 1
+                    border.color: root.theme ? root.theme.accent : Qt.rgba(0.65, 0.55, 0.85, 0.9)
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Approve"
+                        color: root.theme ? root.theme.textPrimary : Qt.rgba(0.96, 0.95, 1.0, 0.98)
+                        font.pixelSize: modeManager.scale(12)
+                        font.family: "M PLUS 2"
+                        font.weight: Font.Medium
+                    }
+
+                    MouseArea {
+                        id: approveMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.resolveConfirm(true)
+                    }
+                }
+            }
+        }
+    }
+
     Item {
         anchors.fill: parent
         z: 3
@@ -893,6 +1117,18 @@ FocusScope {
         }
     }
     } // mainPane
+
+    // Posts an approval decision for a pending tool_confirm prompt. Fire-and-
+    // forget: the blocked chat turn reacts, and a lapsed prompt simply 404s.
+    Process {
+        id: confirmProcess
+        property string payload: ""
+        running: false
+        command: ["curl", "-sS", "--max-time", "5", "-X", "POST",
+                  root._baseUrl + "/chat/confirm",
+                  "-H", "Content-Type: application/json",
+                  "-d", payload]
+    }
 
     Process {
         id: chatProcess
@@ -930,6 +1166,10 @@ FocusScope {
                         root.attachToolResult(tr.id, tr.name, tr.result, tr.error)
                         return
                     }
+                    if (obj.tool_confirm) {
+                        root.pendingConfirm = obj.tool_confirm
+                        return
+                    }
                     if (obj.content) {
                         root.updateLastMessage(obj.content)
                     }
@@ -940,6 +1180,9 @@ FocusScope {
 
         onExited: (exitCode) => {
             root.streaming = false
+            // The stream can end (timeout, error) with a card still up;
+            // never leave a prompt the backend has already abandoned.
+            root.pendingConfirm = null
             if (exitCode !== 0) {
                 root.updateLastMessage("\n[connection failed]")
             }
