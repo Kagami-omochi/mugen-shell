@@ -40,11 +40,10 @@ type ToolDef struct {
 	Description string
 	InputSchema map[string]any
 	ReadOnly    bool
-	// Destructive is the resolved verdict from the readOnlyHint /
-	// destructiveHint annotations: true when the tool may make an
-	// irreversible change. Per the MCP spec a non-read-only tool is
-	// assumed destructive unless the server sends destructiveHint:false,
-	// so an absent annotation still resolves to true here.
+	// Destructive is the resolved verdict on whether the tool may make an
+	// irreversible change and so should be confirmed. Explicit readOnlyHint
+	// / destructiveHint annotations win; many servers send neither, so it
+	// then falls back to the tool name (see resolveDestructive).
 	Destructive bool
 }
 
@@ -227,10 +226,7 @@ func (c *Client) ListTools(ctx context.Context) ([]ToolDef, error) {
 			if schema == nil {
 				schema = map[string]any{"type": "object", "properties": map[string]any{}}
 			}
-			// A read-only tool is never destructive; otherwise the spec
-			// default is destructive unless the server opts out explicitly.
-			destructive := !t.Annotations.ReadOnlyHint &&
-				(t.Annotations.DestructiveHint == nil || *t.Annotations.DestructiveHint)
+			destructive := resolveDestructive(t.Name, t.Annotations.ReadOnlyHint, t.Annotations.DestructiveHint)
 			all = append(all, ToolDef{
 				Name:        t.Name,
 				Description: t.Description,
@@ -250,6 +246,46 @@ func (c *Client) ListTools(ctx context.Context) ([]ToolDef, error) {
 
 // Tools returns the catalog cached by the last ListTools call.
 func (c *Client) Tools() []ToolDef { return c.tools }
+
+// readOnlyVerbs are tool-name leading words that mark a tool as a read.
+// Used only when a server omits the readOnlyHint / destructiveHint
+// annotations, which most do.
+var readOnlyVerbs = map[string]bool{
+	"get": true, "list": true, "read": true, "search": true, "find": true,
+	"fetch": true, "query": true, "describe": true, "show": true, "view": true,
+	"count": true, "check": true, "lookup": true, "browse": true, "scan": true,
+}
+
+// resolveDestructive decides whether a tool should be treated as a
+// destructive write that needs user confirmation. Explicit annotations win;
+// when a server sends neither hint — common — it falls back to the tool
+// name, treating only a clearly read-shaped name as safe so an ambiguous
+// name still errs toward asking.
+func resolveDestructive(name string, readOnly bool, destructiveHint *bool) bool {
+	if readOnly {
+		return false
+	}
+	if destructiveHint != nil {
+		return *destructiveHint
+	}
+	return !readOnlyVerbs[strings.ToLower(firstWord(name))]
+}
+
+// firstWord returns the leading word of a tool name, splitting on the
+// snake_case / kebab-case / camelCase boundary ("read_graph" -> "read",
+// "searchNodes" -> "search").
+func firstWord(name string) string {
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c == '_' || c == '-' || c == '.' || c == ' ' {
+			return name[:i]
+		}
+		if i > 0 && c >= 'A' && c <= 'Z' && name[i-1] >= 'a' && name[i-1] <= 'z' {
+			return name[:i]
+		}
+	}
+	return name
+}
 
 // CallTool invokes a tool and flattens its content blocks into a string.
 // A tool-level failure (isError) comes back as an "error:"-prefixed result

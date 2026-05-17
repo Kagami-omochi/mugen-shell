@@ -204,6 +204,35 @@ func TestClientCallTool(t *testing.T) {
 	}
 }
 
+func TestResolveDestructive(t *testing.T) {
+	yes, no := true, false
+	cases := []struct {
+		desc        string
+		toolName    string
+		readOnly    bool
+		destructive *bool
+		want        bool
+	}{
+		{"readOnlyHint wins over name", "delete_thing", true, nil, false},
+		{"readOnlyHint wins over destructiveHint", "x", true, &yes, false},
+		{"explicit destructiveHint true", "search_x", false, &yes, true},
+		{"explicit destructiveHint false", "create_x", false, &no, false},
+		{"unannotated read verb", "read_graph", false, nil, false},
+		{"unannotated search verb", "search_nodes", false, nil, false},
+		{"unannotated camelCase read", "getUserProfile", false, nil, false},
+		{"unannotated write verb", "create_entities", false, nil, true},
+		{"unannotated delete verb", "delete_entities", false, nil, true},
+		{"unannotated ambiguous name", "open_nodes", false, nil, true},
+		{"reader is not the read verb", "reader_load", false, nil, true},
+	}
+	for _, tc := range cases {
+		if got := resolveDestructive(tc.toolName, tc.readOnly, tc.destructive); got != tc.want {
+			t.Errorf("%s: resolveDestructive(%q, %v, %v) = %v, want %v",
+				tc.desc, tc.toolName, tc.readOnly, tc.destructive, got, tc.want)
+		}
+	}
+}
+
 func TestClientConnectionLost(t *testing.T) {
 	tr := newScriptedTransport(func(rpcMessage) (rpcMessage, bool) {
 		return rpcMessage{}, false // never answers
