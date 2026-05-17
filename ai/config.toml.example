@@ -71,13 +71,25 @@
 # [tools].disabled_categories above — use a short lowercase name with no
 # underscores so that prefix stays unambiguous. A server that fails to
 # spawn or handshake is logged and skipped; the rest still load.
+#
+# A tool that may make an irreversible change is held for a one-tap
+# approval in the chat UI before it runs; set `trusted = true` to skip
+# that prompt for a server you fully control. `env` values support ${VAR}
+# references resolved from mugen-ai's environment, so a token can stay in
+# ~/.config/mugen-ai/.env instead of being written here in plaintext.
 
 # [mcp.servers.memory]
 #   command = "npx"
 #   args = ["-y", "@modelcontextprotocol/server-memory"]
 #   # env = { MEMORY_FILE_PATH = "/home/you/.local/state/mugen-ai/memory.json" }
 #   # disabled = false   # keep the entry on file but skip spawning it
+#   # trusted = false    # true = run this server's tools without an approval prompt
 
 # [mcp.servers.filesystem]
 #   command = "npx"
 #   args = ["-y", "@modelcontextprotocol/server-filesystem", "/home/you/notes"]
+
+# [mcp.servers.github]
+#   command = "npx"
+#   args = ["-y", "@modelcontextprotocol/server-github"]
+#   env = { GITHUB_TOKEN = "${GITHUB_TOKEN}" }   # ${VAR} from ~/.config/mugen-ai/.env

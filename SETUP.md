@@ -288,13 +288,18 @@ command = "npx"
 args = ["-y", "@modelcontextprotocol/server-memory"]
 # env = { MEMORY_FILE_PATH = "/home/you/.local/state/mugen-ai/memory.json" }
 # disabled = false   # keep the entry on file but skip spawning it
+# trusted = false    # true = skip the approval prompt for this server's tools
 ```
 
 `command` must be on the service's `PATH`, and mugen-ai bundles no server runtimes — an `npx`-based server needs Node.js installed, a `uvx`-based one needs [uv](https://docs.astral.sh/uv/), and so on. Nix users should add the runtime (e.g. `nodejs`) to their `home.packages`.
 
-Each server is spawned as a stdio subprocess when mugen-ai starts. Its tools are merged under a `<name>__<tool>` prefix (`memory__read_graph`, `filesystem__read_file`), so the server name doubles as a tool category — disable a whole server from Yura by adding its name to `[tools].disabled_categories`. Use a short lowercase server name with no underscores so the prefix stays unambiguous. The same security gates as the built-in tools apply (audit log, category gate, result sanitisation).
+Each server is spawned as a stdio subprocess when mugen-ai starts. Its tools are merged under a `<name>__<tool>` prefix (`memory__read_graph`, `filesystem__read_file`), so the server name doubles as a tool category — disable a whole server from Yura by adding its name to `[tools].disabled_categories`. Use a short lowercase server name with no underscores so the prefix stays unambiguous. The same security gates as the built-in tools apply (audit log, category gate, result sanitisation), plus the approval prompt below.
 
 A server that fails to spawn or finish the handshake is logged to the journal and skipped; the rest still load. If a connected server later crashes, it is re-dialed automatically the next time one of its tools is used. Restart `mugen-ai.service` after editing to pick up server changes.
+
+**Approval prompt.** A tool that may make an irreversible change — sending a message, deleting a record — is held when Yura calls it: an Approve / Deny prompt appears in the chat UI and the tool runs only if you approve. A denial, a timeout, or a closed chat all count as "declined" and are reported back to Yura. mugen-ai decides which tools are gated from the server's `readOnlyHint` / `destructiveHint` tool annotations, falling back to the tool name when a server sends neither (a leading `get` / `list` / `read` / `search` / … verb counts as a read). Set `trusted = true` on a server you fully control to run all of its tools without the prompt.
+
+**Secrets in `env`.** Values in a server's `env` table support `${VAR}` references, resolved from mugen-ai's own environment. Put a token in `~/.config/mugen-ai/.env` (loaded by the systemd unit) and reference it as `env = { GITHUB_TOKEN = "${GITHUB_TOKEN}" }` so the secret never lands in `config.toml`. config.toml is kept at mode `600` regardless.
 
 ### Provider API keys
 
@@ -328,6 +333,7 @@ systemctl --user restart mugen-ai.service
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/chat` | Send a message, receive SSE stream. Body: `{message, conversation_id, model, thinking?}` — `conversation_id: 0` auto-creates a new conversation, `>0` appends to that one. `thinking` is an optional bool; absent → inherit the conversation's stored value, present → override (and persist for that conversation). The first SSE event is `{conversation_id, model}` so the client can sync state. The model bound to a conversation always wins; the request's `model` field only seeds the model on a brand-new conversation. |
+| POST | `/chat/confirm` | Answer an approval prompt raised mid-`/chat` by a destructive MCP tool. Body: `{confirm_id, approved}` — `confirm_id` arrives in the stream's `tool_confirm` event. The chat UI calls this; a 404 means the prompt already lapsed (answered or timed out) |
 | GET | `/health` | Server status and active model |
 | GET | `/models` | List available models |
 | PUT | `/model` | Set the default model for the *next* new conversation (`{"model": "name"}`). Existing conversations keep their bound model. |

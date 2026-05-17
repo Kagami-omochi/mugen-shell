@@ -59,9 +59,11 @@ Set up alongside mugen-shell via NixOS, Arch + Nix, or `make install` — see [S
 
 Yura speaks function calls back to mugen-shell. Tools route through
 `qs ipc call` so the existing managers stay the source of truth.
-Reversible actions fire immediately; destructive ones (clearing
-notification history, deleting calendar events, etc.) are confirmed in
-plain language in chat first — no modal popups.
+Reversible actions fire immediately; built-in destructive ones (clearing
+notification history, deleting calendar events) are confirmed in plain
+language in chat first. A tool from an external MCP server that may make
+an irreversible change is held for a one-tap Approve / Deny prompt before
+it runs.
 
 | Domain | What Yura can do |
 |---|---|
@@ -79,7 +81,7 @@ plain language in chat first — no modal popups.
 
 Each row above can be turned off as a whole category in Settings → AI / Yura → Tool categories, and app launches are gated by the Allowed apps picker (so "launch firefox" only works once you've enabled firefox there).
 
-Yura's tools aren't limited to the table above — add any **MCP server** under `[mcp.servers.*]` in the config (memory, filesystem, GitHub, …) and its tools merge into the same gated set, passing through the per-category gate, audit log, and result sanitisation. See [SETUP.md](SETUP.md#mcp-servers).
+Yura's tools aren't limited to the table above — add any **MCP server** under `[mcp.servers.*]` in the config (memory, filesystem, GitHub, …) and its tools merge into the same gated set, passing through the per-category gate, audit log, result sanitisation, and a one-tap approval prompt before anything that writes. See [SETUP.md](SETUP.md#mcp-servers).
 
 Power actions (lock / suspend / logout / reboot / shutdown) intentionally stay out of Yura's reach — drive those from the Power Menu directly.
 
