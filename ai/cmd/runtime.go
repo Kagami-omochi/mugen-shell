@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/tmy7533018/mugen-ai/internal/config"
 	"github.com/tmy7533018/mugen-ai/internal/history"
@@ -92,6 +93,17 @@ func loadRuntimeContext(modelOverride, systemOverride string) (*runtimeContext, 
 	st, err := store.Open(filepath.Join(stateDir, "history.db"))
 	if err != nil {
 		return nil, fmt.Errorf("open history store: %w", err)
+	}
+
+	// Retention: drop conversations idle longer than retain_days before the
+	// history layer loads, so a pruned-away current pointer self-heals.
+	if cfg.History.RetainDays > 0 {
+		cutoff := time.Now().AddDate(0, 0, -cfg.History.RetainDays).Unix()
+		if n, err := st.PruneConversationsOlderThan(cutoff); err != nil {
+			fmt.Fprintf(os.Stderr, "history: prune failed: %v\n", err)
+		} else if n > 0 {
+			fmt.Fprintf(os.Stderr, "history: pruned %d conversation(s) older than %d days\n", n, cfg.History.RetainDays)
+		}
 	}
 
 	hist, err := history.New(st, system)

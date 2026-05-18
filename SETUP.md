@@ -359,6 +359,9 @@ systemctl --user restart mugen-ai.service
 | POST | `/conversations` | Create an empty conversation explicitly |
 | POST | `/conversations/{id}/select` | Make a conversation current |
 | DELETE | `/conversations/{id}` | Delete a conversation |
+| DELETE | `/conversations` | Delete every conversation — the Settings GUI calls this behind a confirm step |
+| GET | `/conversations/stats` | History database path, conversation count, and on-disk size |
+| GET | `/conversations/export` | Every conversation with its messages as one JSON document |
 | GET | `/events` | Server-Sent Events stream of state changes (new conversations / messages) for live UI sync |
 | GET | `/tools` | List the tools the backend exposes to the LLM — built-in shell tools plus any MCP server tools |
 | POST | `/tools/call` | Debug path: invoke a tool by name with no LLM involvement. Body: `{name, args}` |

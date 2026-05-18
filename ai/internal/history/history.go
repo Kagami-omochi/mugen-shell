@@ -246,6 +246,20 @@ func (h *History) DeleteConversation(id int64) error {
 	return h.store.SetCurrentConversationID(newID)
 }
 
+// DeleteAll removes every conversation and resets the current pointer, so the
+// next message starts a fresh conversation.
+func (h *History) DeleteAll() error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if err := h.store.DeleteAllConversations(); err != nil {
+		return err
+	}
+	if err := h.switchLocked(0); err != nil {
+		return err
+	}
+	return h.store.ClearCurrentConversationID()
+}
+
 func (h *History) truncateLocked() {
 	if h.max <= 0 || len(h.messages) <= h.max {
 		return

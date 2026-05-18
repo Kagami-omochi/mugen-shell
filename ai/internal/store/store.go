@@ -33,7 +33,8 @@ type Message struct {
 }
 
 type Store struct {
-	db *sql.DB
+	db   *sql.DB
+	path string
 }
 
 func Open(path string) (*Store, error) {
@@ -45,7 +46,7 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
-	s := &Store{db: db}
+	s := &Store{db: db, path: path}
 	if err := s.migrate(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("migrate: %w", err)
@@ -188,6 +189,45 @@ func (s *Store) TouchConversation(id int64) error {
 func (s *Store) DeleteConversation(id int64) error {
 	_, err := s.db.Exec(`DELETE FROM conversations WHERE id = ?`, id)
 	return err
+}
+
+// ConversationCount returns how many conversations are stored.
+func (s *Store) ConversationCount() (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM conversations`).Scan(&n)
+	return n, err
+}
+
+// DeleteAllConversations removes every conversation; messages cascade.
+func (s *Store) DeleteAllConversations() error {
+	_, err := s.db.Exec(`DELETE FROM conversations`)
+	return err
+}
+
+// PruneConversationsOlderThan deletes conversations whose last activity is
+// before cutoff (a Unix timestamp) and returns how many were removed.
+func (s *Store) PruneConversationsOlderThan(cutoff int64) (int, error) {
+	res, err := s.db.Exec(`DELETE FROM conversations WHERE updated_at < ?`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	return int(n), err
+}
+
+// Path is the database file's path.
+func (s *Store) Path() string { return s.path }
+
+// SizeBytes is the on-disk size of the database, including its write-ahead
+// log — under WAL mode the -wal file can hold a meaningful slice of data.
+func (s *Store) SizeBytes() int64 {
+	var total int64
+	for _, suffix := range []string{"", "-wal"} {
+		if info, err := os.Stat(s.path + suffix); err == nil {
+			total += info.Size()
+		}
+	}
+	return total
 }
 
 func (s *Store) AppendMessage(convID int64, role, content string) error {

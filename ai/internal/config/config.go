@@ -13,6 +13,14 @@ type Config struct {
 	Shell       Shell       `toml:"shell" json:"shell"`
 	Tools       Tools       `toml:"tools" json:"tools"`
 	MCP         MCP         `toml:"mcp" json:"mcp"`
+	History     History     `toml:"history" json:"history"`
+}
+
+// History controls retention of stored conversations. RetainDays > 0 prunes,
+// at startup, conversations whose last activity is older than that many days;
+// 0 keeps everything.
+type History struct {
+	RetainDays int `toml:"retain_days" json:"retain_days"`
 }
 
 // MCP configures external Model Context Protocol servers whose tools are

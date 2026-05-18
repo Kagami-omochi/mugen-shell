@@ -50,6 +50,9 @@ func (s *Server) Routes() http.Handler {
 
 	mux.HandleFunc("GET /conversations", s.handleListConversations)
 	mux.HandleFunc("POST /conversations", s.handleCreateConversation)
+	mux.HandleFunc("DELETE /conversations", s.handleClearConversations)
+	mux.HandleFunc("GET /conversations/stats", s.handleConversationStats)
+	mux.HandleFunc("GET /conversations/export", s.handleExportConversations)
 	mux.HandleFunc("GET /conversations/current", s.handleCurrentConversation)
 	mux.HandleFunc("GET /conversations/{id}", s.handleGetConversation)
 	mux.HandleFunc("DELETE /conversations/{id}", s.handleDeleteConversation)
@@ -494,6 +497,62 @@ func (s *Server) handleSelectConversation(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, map[string]any{"id": id})
+}
+
+// handleConversationStats reports where the history database lives, how many
+// conversations it holds, and its on-disk size — for the Settings GUI.
+func (s *Server) handleConversationStats(w http.ResponseWriter, _ *http.Request) {
+	count, err := s.store.ConversationCount()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"path":       s.store.Path(),
+		"count":      count,
+		"size_bytes": s.store.SizeBytes(),
+	})
+}
+
+// handleExportConversations returns every conversation with its messages as
+// one JSON document — the Settings GUI saves the response to a file.
+func (s *Server) handleExportConversations(w http.ResponseWriter, _ *http.Request) {
+	convs, err := s.store.ListConversations()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	type exportConv struct {
+		store.Conversation
+		Messages []store.Message `json:"messages"`
+	}
+	out := make([]exportConv, 0, len(convs))
+	for _, c := range convs {
+		msgs, err := s.store.ListMessages(c.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if msgs == nil {
+			msgs = []store.Message{}
+		}
+		out = append(out, exportConv{Conversation: c, Messages: msgs})
+	}
+	writeJSON(w, map[string]any{
+		"exported_at":   time.Now().Unix(),
+		"conversations": out,
+	})
+}
+
+// handleClearConversations deletes every conversation. The chat UIs refresh
+// off the broadcast; the next message starts a fresh conversation.
+func (s *Server) handleClearConversations(w http.ResponseWriter, _ *http.Request) {
+	if err := s.history.DeleteAll(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	s.events.broadcast("conversations", nil)
+	writeJSON(w, map[string]any{"cleared": true})
 }
 
 func parsePathID(r *http.Request, name string) (int64, bool) {
